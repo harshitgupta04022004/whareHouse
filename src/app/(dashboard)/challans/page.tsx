@@ -24,20 +24,14 @@ interface DORecord {
 
 export default function DOsPage() {
   const { user } = useAuth();
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const initialRange = last7DaysRange();
+  const [from, setFrom] = useState(initialRange.from);
+  const [to, setTo] = useState(initialRange.to);
   const [DOs, setDOs] = useState<DORecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    const range = last7DaysRange();
-    setFrom(range.from);
-    setTo(range.to);
-  }, [user]);
 
   useEffect(() => {
     if (!user || !from || !to) return;

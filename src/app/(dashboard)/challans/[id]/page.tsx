@@ -50,32 +50,32 @@ export default function DODetailPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
-    fetchDO();
-  }, [user, doId]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = getSupabase();
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
 
-  async function fetchDO() {
-    setLoading(true);
-    try {
-      const supabase = getSupabase();
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-
-      const res = await fetch(`/api/do?id=${doId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error("DO not found");
-      const result = await res.json();
-      setDO(result.data);
-    } catch (err) {
-      console.error("Failed to fetch DO:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+        const res = await fetch(`/api/do?id=${doId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error("DO not found");
+        const result = await res.json();
+        if (!cancelled) setDO(result.data);
+      } catch (err) {
+        console.error("Failed to fetch DO:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, doId, refreshKey]);
 
   const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -95,7 +95,7 @@ export default function DODetailPage() {
     }
 
     setUploading(false);
-    fetchDO();
+    setRefreshKey(k => k + 1);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -108,7 +108,7 @@ export default function DODetailPage() {
     if (!confirm("Delete this file?")) return;
     try {
       await deleteFile(fileId);
-      fetchDO();
+      setRefreshKey(k => k + 1);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete file");
     }

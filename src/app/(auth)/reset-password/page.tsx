@@ -13,7 +13,12 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [validToken, setValidToken] = useState<boolean | null>(null);
+  const [validToken, setValidToken] = useState<boolean | null>(() => {
+    if (typeof window !== "undefined" && window.location.hash.includes("access_token")) {
+      return true;
+    }
+    return null;
+  });
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -23,19 +28,20 @@ export default function ResetPasswordPage() {
       }
     });
 
-    // Check if we have a hash fragment (access_token)
-    const hash = window.location.hash;
-    if (hash.includes("access_token")) {
-      setValidToken(true);
-    } else {
-      // No token — might be invalid
-      setTimeout(() => {
-        if (!validToken) setValidToken(false);
+    // If no token found from hash, mark as invalid after a delay
+    const hasHash = typeof window !== "undefined" && window.location.hash.includes("access_token");
+    if (!hasHash) {
+      const timer = setTimeout(() => {
+        setValidToken((prev) => prev === null ? false : prev);
       }, 2000);
+      return () => {
+        subscription.unsubscribe();
+        clearTimeout(timer);
+      };
     }
 
     return () => subscription.unsubscribe();
-  }, [validToken]);
+  }, []);
 
   const validate = (): string | null => {
     if (password.length < 8) return "Password must be at least 8 characters.";

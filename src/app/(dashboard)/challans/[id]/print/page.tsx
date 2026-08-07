@@ -36,26 +36,26 @@ export default function DOPrintPage() {
 
   useEffect(() => {
     if (!user) return;
-    fetchDO();
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = getSupabase();
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        const res = await fetch(`/api/do?id=${doId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error("DO not found");
+        const result = await res.json();
+        if (!cancelled) setDO(result.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user, doId]);
-
-  async function fetchDO() {
-    try {
-      const supabase = getSupabase();
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      const res = await fetch(`/api/do?id=${doId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error("DO not found");
-      const result = await res.json();
-      setDO(result.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   useEffect(() => {
     if (DO && !loading) {

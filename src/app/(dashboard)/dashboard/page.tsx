@@ -1,0 +1,220 @@
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
+import { getDashboard } from "@/lib/api-client";
+import { formatDate } from "@/lib/utils";
+
+interface ProductRow {
+  item_id: string;
+  product: string;
+  bag_size: number;
+  total_in: number;
+  total_out: number;
+  remaining: number;
+}
+
+export default function AdminDashboardPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [rows, setRows] = useState<ProductRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const now = new Date();
+  const defaultFrom = new Date(now.getTime() - 30 * 86400000).toISOString().split("T")[0];
+  const defaultTo = now.toISOString().split("T")[0];
+
+  const [from, setFrom] = useState(defaultFrom);
+  const [to, setTo] = useState(defaultTo);
+  const [preset, setPreset] = useState("30d");
+
+  useEffect(() => {
+    if (!user || (user.role !== "admin" && user.role !== "manager")) {
+      router.replace("/challans");
+      return;
+    }
+    fetchData();
+  }, [user, router, from, to]);
+
+  async function fetchData() {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await getDashboard(from, to);
+      setRows(result.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const applyPreset = (p: string) => {
+    setPreset(p);
+    const t = new Date();
+    const toStr = t.toISOString().split("T")[0];
+    let fromStr: string;
+    switch (p) {
+      case "7d":
+        fromStr = new Date(t.getTime() - 7 * 86400000).toISOString().split("T")[0];
+        break;
+      case "30d":
+        fromStr = new Date(t.getTime() - 30 * 86400000).toISOString().split("T")[0];
+        break;
+      case "mtd":
+        fromStr = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-01`;
+        break;
+      default:
+        fromStr = defaultFrom;
+    }
+    setFrom(fromStr);
+    setTo(toStr);
+  };
+
+  const totals = useMemo(() => {
+    return rows.reduce(
+      (acc, r) => ({
+        totalIn: acc.totalIn + r.total_in,
+        totalOut: acc.totalOut + r.total_out,
+        totalRemaining: acc.totalRemaining + r.remaining,
+      }),
+      { totalIn: 0, totalOut: 0, totalRemaining: 0 }
+    );
+  }, [rows]);
+
+  const exportCSV = () => {
+    const header = "Product,Bag Size (kg),IN,OUT,Remaining,Remaining Bags";
+    const csvRows = rows.map((r) =>
+      [r.product, r.bag_size, r.total_in, r.total_out, r.remaining, r.bag_size > 0 ? Math.round(r.remaining / r.bag_size) : 0].join(",")
+    );
+    const csv = [header, ...csvRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `inventory-${from}-${to}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink">
+            Inventory Dashboard
+          </h1>
+          <p className="text-[14px] text-ink-soft mt-1">
+            IN/OUT movement matrix by product for the selected period.
+          </p>
+        </div>
+        <button
+          onClick={exportCSV}
+          className="inline-flex h-9 items-center gap-1.5 px-4 text-[13px] font-medium border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors print:hidden"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export CSV
+        </button>
+      </div>
+
+      {/* Date Range */}
+      <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5 mb-6 print:hidden">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-[11px] font-medium text-ink-faint mb-1">From</label>
+            <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPreset(""); }} className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-ink-faint mb-1">To</label>
+            <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPreset(""); }} className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink" />
+          </div>
+          {["7d", "30d", "mtd"].map((p) => (
+            <button
+              key={p}
+              onClick={() => applyPreset(p)}
+              className={`h-9 px-3 text-[12px] font-medium rounded-[9px] transition-colors ${
+                preset === p ? "bg-brand text-brand-ink" : "text-ink-soft hover:text-ink hover:bg-white/5"
+              }`}
+            >
+              {p === "7d" ? "7 Days" : p === "30d" ? "30 Days" : "Month to Date"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total IN</div>
+          <div className="font-display text-[28px] font-bold text-green-400 leading-none">{totals.totalIn.toLocaleString()}</div>
+          <div className="text-[11px] text-ink-faint mt-1.5">bags in period</div>
+        </div>
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total OUT</div>
+          <div className="font-display text-[28px] font-bold text-orange-400 leading-none">{totals.totalOut.toLocaleString()}</div>
+          <div className="text-[11px] text-ink-faint mt-1.5">bags in period</div>
+        </div>
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total Remaining</div>
+          <div className="font-display text-[28px] font-bold text-ink leading-none">{totals.totalRemaining.toLocaleString()}</div>
+          <div className="text-[11px] text-ink-faint mt-1.5">bags all time</div>
+        </div>
+      </div>
+
+      {/* Table */}
+      {error ? (
+        <div className="rounded-[var(--radius-card)] border border-red-500/20 bg-red-500/5 p-6 text-center">
+          <p className="text-[13px] text-red-400 mb-3">{error}</p>
+          <button onClick={fetchData} className="text-[13px] font-semibold text-brand hover:underline">Retry</button>
+        </div>
+      ) : loading ? (
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-12 text-center">
+          <div className="w-6 h-6 border-2 border-brand/30 border-t-brand rounded-full animate-spin mx-auto" />
+          <p className="text-[13px] text-ink-faint mt-3">Loading inventory...</p>
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-12 text-center">
+          <p className="text-[13px] text-ink-faint">No inventory movements in this period.</p>
+        </div>
+      ) : (
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">Product</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">Bag Size</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">IN (bags)</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">OUT (bags)</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">Remaining</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">Bags Left</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const bagsLeft = r.bag_size > 0 ? Math.round(r.remaining / r.bag_size) : 0;
+                  return (
+                    <tr key={r.item_id} className="border-b border-border/50 last:border-0 hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-3 text-[13px] font-medium text-ink">{r.product}</td>
+                      <td className="px-5 py-3 text-[13px] text-ink-soft text-right">{r.bag_size} kg</td>
+                      <td className="px-5 py-3 text-[13px] text-green-400 text-right font-medium">{r.total_in.toLocaleString()}</td>
+                      <td className="px-5 py-3 text-[13px] text-orange-400 text-right font-medium">{r.total_out.toLocaleString()}</td>
+                      <td className={`px-5 py-3 text-[13px] text-right font-semibold ${r.remaining > 0 ? "text-ink" : r.remaining < 0 ? "text-red-400" : "text-ink-faint"}`}>
+                        {r.remaining.toLocaleString()}
+                      </td>
+                      <td className="px-5 py-3 text-[13px] text-ink-soft text-right">{bagsLeft.toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,93 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy-preview:
+    name: Preview Deploy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: website/package-lock.json
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+      - name: Pull Vercel environment
+        working-directory: website
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build
+        working-directory: website
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy to preview
+        id: deploy
+        working-directory: website
+        run: |
+          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$URL" >> $GITHUB_OUTPUT
+      - name: Smoke test
+        run: |
+          curl -sf ${{ steps.deploy.outputs.url }}/api/health || exit 1
+          curl -sf ${{ steps.deploy.outputs.url }}/ | head -1 || exit 1
+          echo "Smoke test passed"
+
+  deploy-production:
+    name: Production Deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: []
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: website/package-lock.json
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+      - name: Pull Vercel environment
+        working-directory: website
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build
+        working-directory: website
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy to production
+        id: deploy
+        working-directory: website
+        run: |
+          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$URL" >> $GITHUB_OUTPUT
+      - name: Post-deploy smoke test
+        run: |
+          sleep 10
+          curl -sf ${{ steps.deploy.outputs.url }}/api/health || exit 1
+          curl -sf ${{ steps.deploy.outputs.url }}/api/ready || exit 1
+          curl -sf ${{ steps.deploy.outputs.url }}/ | head -1 || exit 1
+          echo "Production smoke test passed"
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Deploy failed — consider rollback"
+          echo "To rollback: vercel rollback --token=${{ secrets.VERCEL_TOKEN }}"

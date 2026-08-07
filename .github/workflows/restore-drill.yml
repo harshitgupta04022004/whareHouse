@@ -30,10 +30,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-          cache-dependency-path: website/package-lock.json
 
       - name: Install dependencies
-        working-directory: website
         run: npm ci
 
       - name: Run smoke queries against backup
@@ -49,17 +47,14 @@ jobs:
           echo "Checking table counts..." >> $GITHUB_STEP_SUMMARY
 
       - name: Run RLS isolation tests
-        working-directory: website
         run: npx vitest run tests/integration/02-rls-tenant-isolation.test.ts --reporter=verbose 2>&1 | tee drill-rls.txt
         continue-on-error: true
 
       - name: Run audit integrity tests
-        working-directory: website
         run: npx vitest run tests/integration/06-audit-integrity.test.ts --reporter=verbose 2>&1 | tee drill-audit.txt
         continue-on-error: true
 
       - name: Run dashboard golden tests
-        working-directory: website
         run: npx vitest run tests/integration/07-dashboard-golden.test.ts --reporter=verbose 2>&1 | tee drill-dashboard.txt
         continue-on-error: true
 

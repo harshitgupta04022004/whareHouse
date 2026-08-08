@@ -33,6 +33,7 @@ export default function AuditPage() {
       return;
     }
     fetchEntries();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, actionFilter]);
 
   async function fetchEntries(nextCursor?: string) {

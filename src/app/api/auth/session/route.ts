@@ -1,6 +1,6 @@
 import { getAuthIdentity, getAuthUser, requireAuth } from "@/lib/auth";
 import { handleApiError } from "@/lib/errors";
-import { createServiceClient } from "@/lib/supabase";
+import { createServiceClient, createServerClient } from "@/lib/supabase";
 import { getClientIp, getUserAgent } from "@/lib/auth";
 
 /**
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     const ua = getUserAgent(request);
 
     // Get the current session id from the auth token
-    const authClient = (await import("@/lib/supabase")).createServerClient(request);
+    const authClient = createServerClient(request);
     const { data: { session } } = await authClient.auth.getSession();
     const sessionId = session?.access_token?.slice(-8) ?? null;
 

@@ -36,6 +36,7 @@ export default function DOsPage() {
   useEffect(() => {
     if (!user || !from || !to) return;
     fetchDOs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, from, to]);
 
   async function fetchDOs(nextCursor?: string) {

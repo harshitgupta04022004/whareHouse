@@ -5,7 +5,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ws doesn't match Supabase's WebSocketLikeConstructor exactly, so we use a type assertion
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
 const wsTransport = require("ws") as any;
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";

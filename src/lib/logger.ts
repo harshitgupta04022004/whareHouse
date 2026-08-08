@@ -58,7 +58,6 @@ function log(level: LogLevel, message: string, meta?: Record<string, unknown>) {
     entry.metadata = meta;
   }
 
-  // eslint-disable-next-line no-console
   console.log(JSON.stringify(entry));
 }
 

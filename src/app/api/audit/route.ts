@@ -38,6 +38,21 @@ export async function GET(request: Request) {
         log_id: row.log_id,
         user_id: row.user_id,
         user_name: (row.app_users as { name: string } | null)?.name ?? null,
+        app_users: row.app_users,
+        entity: row.entity,
+        entity_id: row.entity_id,
+        action: row.action,
+        old_data: row.old_data,
+        new_data: row.new_data,
+        ip_address: row.ip_address,
+        request_id: row.request_id,
+        timestamp: row.timestamp,
+      })) ?? [],
+      data: data?.map((row) => ({
+        log_id: row.log_id,
+        user_id: row.user_id,
+        user_name: (row.app_users as { name: string } | null)?.name ?? null,
+        app_users: row.app_users,
         entity: row.entity,
         entity_id: row.entity_id,
         action: row.action,
@@ -50,6 +65,8 @@ export async function GET(request: Request) {
       total: count ?? 0,
       limit,
       offset,
+      hasMore: (count ?? 0) > offset + limit,
+      cursor: String(offset + limit),
     });
   } catch (error) {
     return handleApiError(error);

@@ -35,7 +35,7 @@ export default function Navbar() {
               </span>
               <div className="leading-tight">
                 <span className="font-display font-bold text-[14px] tracking-[-0.01em] text-ink block">
-                  Radheshyam Warehouse
+                  {user?.warehouseName ?? "Warehouse"}
                 </span>
                 <span className="text-[10px] font-medium text-ink-faint">
                   DO Records &middot; Goods &amp; Warehouse

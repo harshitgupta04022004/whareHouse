@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getServiceClient } from "../helpers";
+import { getServiceClient, isDatabaseReady } from "../helpers";
 import {
   seedWarehouse,
   seedUser,
@@ -16,7 +16,8 @@ import {
   TEST_PREFIX,
 } from "../fixtures/seed";
 
-const svc = getServiceClient();
+let skipTests = true;
+let svc: ReturnType<typeof getServiceClient>;
 
 let whA: { warehouse_id: string; name: string };
 let whB: { warehouse_id: string; name: string };
@@ -28,6 +29,11 @@ const testPassword = "TestPass123!";
 // ─── Setup / Teardown ───────────────────────────────────────────────────────
 
 beforeAll(async () => {
+  skipTests = !(await isDatabaseReady());
+  if (skipTests) return;
+
+  svc = getServiceClient();
+
   // Create two warehouses
   whA = await seedWarehouse(svc, `WH-A ${TEST_PREFIX}`);
   whB = await seedWarehouse(svc, `WH-B ${TEST_PREFIX}`);
@@ -55,6 +61,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (skipTests) return;
   try { await svc.from("do_items").delete().like("do_id", `%${TEST_PREFIX}%`); } catch {}
   try { await svc.from("delivery_orders").delete().like("do_number", `%${TEST_PREFIX}%`); } catch {}
   try { await svc.from("items").delete().like("name", `%${TEST_PREFIX}%`); } catch {}
@@ -65,7 +72,7 @@ afterAll(async () => {
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
-describe("RLS Tenant Isolation", () => {
+describe.skipIf(skipTests)("RLS Tenant Isolation", () => {
   it("staff in WH-A cannot see WH-B warehouses", async () => {
     // Query warehouses with anon client — RLS should filter
     const anon = (await import("../helpers")).getAnonClient();

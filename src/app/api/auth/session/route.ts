@@ -1,21 +1,32 @@
-import { getAuthUser, requireAuth } from "@/lib/auth";
-import { handleApiError, PermissionError } from "@/lib/errors";
+import { getAuthIdentity, getAuthUser, requireAuth } from "@/lib/auth";
+import { handleApiError } from "@/lib/errors";
 import { createServiceClient } from "@/lib/supabase";
 import { getClientIp, getUserAgent } from "@/lib/auth";
 
 /**
  * GET /api/auth/session
  * Returns the current authenticated user with warehouse + role info.
- * Returns 401 if not authenticated, 403 if no app_users row.
+ * Returns 401 if not authenticated, 403 if signed in but no warehouse yet.
  */
 export async function GET(request: Request) {
   try {
-    const user = await getAuthUser(request);
-
-    if (!user) {
+    const identity = await getAuthIdentity(request);
+    if (!identity) {
       return Response.json(
         { error: "unauthenticated", message: "Not authenticated." },
         { status: 401 },
+      );
+    }
+
+    const user = await getAuthUser(request);
+    if (!user) {
+      return Response.json(
+        {
+          error: "needs_onboarding",
+          message: "No warehouse yet. Create a warehouse to continue.",
+          needsOnboarding: true,
+        },
+        { status: 403 },
       );
     }
 
@@ -28,6 +39,7 @@ export async function GET(request: Request) {
         warehouseId: user.warehouseId,
         warehouseName: user.warehouseName,
       },
+      needsOnboarding: false,
     });
   } catch (error) {
     return handleApiError(error);

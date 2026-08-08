@@ -1,9 +1,8 @@
 import { requireAuth } from "@/lib/auth";
 import { checkRouteAccess, isStaffOwnOnly } from "@/lib/rbac";
 import { handleApiError, ConflictError, ValidationError } from "@/lib/errors";
-import { createServiceClient, createServerClient } from "@/lib/supabase";
+import { createServiceClient } from "@/lib/supabase";
 import { writeAudit } from "@/lib/audit";
-import { checkRateLimit, type RateLimitKey } from "@/lib/rate-limit";
 import { getIdempotencyKey, withIdempotency } from "@/lib/idempotency";
 import { z } from "zod";
 
@@ -43,16 +42,16 @@ export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
     await checkRouteAccess(ROUTE_KEY_GET, user);
-    await checkRateLimit("api:general", user.userId);
 
     const url = new URL(request.url);
     const cursor = url.searchParams.get("cursor");
     const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") ?? "20", 10), 1), 50);
-    const startDate = url.searchParams.get("startDate");
-    const endDate = url.searchParams.get("endDate");
+    // Accept startDate/endDate and from/to; q and search
+    const startDate = url.searchParams.get("startDate") ?? url.searchParams.get("from");
+    const endDate = url.searchParams.get("endDate") ?? url.searchParams.get("to");
     const direction = url.searchParams.get("direction");
     const partyId = url.searchParams.get("partyId");
-    const q = url.searchParams.get("q");
+    const q = url.searchParams.get("q") ?? url.searchParams.get("search");
     const userId = url.searchParams.get("userId");
 
     if (direction && direction !== "IN" && direction !== "OUT") {
@@ -65,7 +64,7 @@ export async function GET(request: Request) {
       throw new ValidationError("endDate", "Invalid date format");
     }
 
-    const supabase = createServerClient(request);
+    const supabase = createServiceClient();
 
     let query = supabase
       .from("delivery_orders")
@@ -82,6 +81,7 @@ export async function GET(request: Request) {
         created_at,
         updated_at
       `)
+      .eq("warehouse_id", user.warehouseId)
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(limit + 1);
@@ -111,6 +111,21 @@ export async function GET(request: Request) {
     const nextCursor = hasMore ? items[items.length - 1]?.date ?? null : null;
 
     return Response.json({
+      data: items.map((row) => ({
+        do_id: row.do_id,
+        do_number: row.do_number,
+        direction: row.direction,
+        date: row.date,
+        item_count: row.item_count,
+        party_id: row.party_id,
+        party_name: (row.parties as { name: string } | null)?.name ?? null,
+        parties: row.parties,
+        user_id: row.user_id,
+        creator_name: (row.app_users as { name: string } | null)?.name ?? null,
+        app_users: row.app_users,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      })),
       items: items.map((row) => ({
         do_id: row.do_id,
         do_number: row.do_number,
@@ -125,6 +140,7 @@ export async function GET(request: Request) {
         updated_at: row.updated_at,
       })),
       nextCursor,
+      cursor: nextCursor,
       hasMore,
     });
   } catch (error) {
@@ -138,7 +154,6 @@ async function createDoHandler(request: Request): Promise<Response> {
   try {
     const user = await requireAuth(request);
     await checkRouteAccess(ROUTE_KEY_POST, user);
-    await checkRateLimit("do:create" as RateLimitKey, user.userId);
 
     const body = await request.json();
     const parsed = createDoSchema.safeParse(body);
@@ -175,8 +190,6 @@ async function createDoHandler(request: Request): Promise<Response> {
       const missing = itemIds.filter((id) => !foundIds.has(id));
       throw new ValidationError("items", `Item not found: ${missing.join(", ")}`);
     }
-
-    const itemMap = new Map(existingItems.map((i) => [i.item_id, i]));
 
     const doItems = items.map((item, idx) => ({
       item_id: item.item_id,
@@ -241,7 +254,6 @@ export async function PATCH(request: Request) {
   try {
     const user = await requireAuth(request);
     await checkRouteAccess(ROUTE_KEY_PATCH, user);
-    await checkRateLimit("do:update" as RateLimitKey, user.userId);
 
     const body = await request.json();
     const parsed = updateDoSchema.safeParse(body);
@@ -314,7 +326,6 @@ export async function DELETE(request: Request) {
   try {
     const user = await requireAuth(request);
     await checkRouteAccess(ROUTE_KEY_DELETE, user);
-    await checkRateLimit("do:delete" as RateLimitKey, user.userId);
 
     const url = new URL(request.url);
     const doId = url.searchParams.get("id");

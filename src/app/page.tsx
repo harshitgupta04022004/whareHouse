@@ -5,14 +5,23 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
+  const { user, session, loading, needsOnboarding } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      router.replace(user ? "/challans" : "/login");
+    if (loading) return;
+    if (!session) {
+      router.replace("/login");
+      return;
     }
-  }, [user, loading, router]);
+    if (needsOnboarding) {
+      router.replace("/onboarding");
+      return;
+    }
+    if (user) {
+      router.replace("/challans");
+    }
+  }, [user, session, loading, needsOnboarding, router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

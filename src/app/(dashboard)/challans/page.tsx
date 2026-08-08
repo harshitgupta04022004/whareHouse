@@ -129,7 +129,7 @@ export default function DOsPage() {
             Item list
           </Link>
           <Link
-            href="/DOs/new"
+            href="/challans/new"
             className="inline-flex h-9 items-center gap-1.5 px-4 text-[13px] font-semibold bg-brand hover:bg-brand-strong text-brand-ink rounded-[10px] shadow-[var(--shadow-sm)] transition-all active:scale-[0.98]"
           >
             <svg

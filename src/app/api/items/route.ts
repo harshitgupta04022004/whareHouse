@@ -41,6 +41,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from("items")
       .select("*")
+      .eq("warehouse_id", user.warehouseId)
       .order("name")
       .limit(limit + 1);
 
@@ -68,7 +69,7 @@ export async function GET(request: Request) {
     const pageItems = hasMore ? items.slice(0, limit) : items;
     const nextCursor = hasMore ? pageItems[pageItems.length - 1]?.name ?? null : null;
 
-    return Response.json({ items: pageItems, nextCursor, hasMore });
+    return Response.json({ items: pageItems, data: pageItems, nextCursor, hasMore });
   } catch (error) {
     return handleApiError(error);
   }

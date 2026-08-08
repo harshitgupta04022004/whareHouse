@@ -34,7 +34,12 @@ export async function GET(request: Request) {
     const q = url.searchParams.get("q");
 
     const supabase = createServiceClient();
-    let query = supabase.from("parties").select("*").order("name").limit(limit + 1);
+    let query = supabase
+      .from("parties")
+      .select("*")
+      .eq("warehouse_id", user.warehouseId)
+      .order("name")
+      .limit(limit + 1);
 
     if (cursor) query = query.gt("name", cursor);
     if (q) query = query.ilike("name", `%${q}%`);
@@ -46,7 +51,7 @@ export async function GET(request: Request) {
     const items = hasMore ? data.slice(0, limit) : data;
     const nextCursor = hasMore ? items[items.length - 1]?.name ?? null : null;
 
-    return Response.json({ parties: items, nextCursor, hasMore });
+    return Response.json({ parties: items, data: items, nextCursor, hasMore });
   } catch (error) {
     return handleApiError(error);
   }

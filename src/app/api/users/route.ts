@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    return Response.json({ users: data ?? [] });
+    return Response.json({ users: data ?? [], data: data ?? [] });
   } catch (error) {
     return handleApiError(error);
   }

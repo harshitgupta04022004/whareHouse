@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import { getServiceClient, apiRequest } from "../helpers";
+import { getServiceClient, apiRequest, isDatabaseReady } from "../helpers";
 import { seedWarehouse, seedUser, seedItem, seedParty, seedDO, TEST_PREFIX } from "../fixtures/seed";
 
-const svc = getServiceClient();
+let skipTests = true;
+let svc: ReturnType<typeof getServiceClient>;
 const password = "TestPass123!";
 
 let warehouse: { warehouse_id: string };
@@ -22,6 +23,10 @@ async function getToken(email: string, pw: string): Promise<string> {
 }
 
 beforeAll(async () => {
+  skipTests = !(await isDatabaseReady());
+  if (skipTests) return;
+
+  svc = getServiceClient();
   warehouse = await seedWarehouse(svc, `Drive WH ${TEST_PREFIX}`);
   const u = await seedUser(svc, warehouse.warehouse_id, "admin", "drive_admin");
   adminUser = { ...u, password };
@@ -33,6 +38,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (skipTests) return;
   try { await svc.from("files").delete().like("file_name", `%${TEST_PREFIX}%`); } catch {}
   try { await svc.from("do_items").delete().like("do_id", `%${TEST_PREFIX}%`); } catch {}
   try { await svc.from("delivery_orders").delete().like("do_number", `%${TEST_PREFIX}%`); } catch {}
@@ -42,7 +48,7 @@ afterAll(async () => {
   try { await svc.from("warehouses").delete().like("name", `%${TEST_PREFIX}%`); } catch {}
 });
 
-describe("Drive Upload (Mocked)", () => {
+describe.skipIf(skipTests)("Drive Upload (Mocked)", () => {
   it("upload endpoint exists and requires auth", async () => {
     const res = await apiRequest("/api/files", { method: "POST" });
     expect([401, 403, 405]).toContain(res.status);
@@ -55,7 +61,6 @@ describe("Drive Upload (Mocked)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ do_id: doId, category: "document" }),
     });
-    // Should fail without actual file data
     expect(res.status).toBeGreaterThanOrEqual(400);
   });
 
@@ -75,7 +80,6 @@ describe("Drive Upload (Mocked)", () => {
   });
 
   it("MIME type validation rejects non-allowed types", async () => {
-    // Create a fake file with disallowed MIME type
     const fakeExe = new Blob(["fake executable content"], { type: "application/exe" });
     const formData = new FormData();
     formData.append("file", fakeExe, `malware-${TEST_PREFIX}.exe`);

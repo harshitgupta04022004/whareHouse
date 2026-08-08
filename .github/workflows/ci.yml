@@ -38,6 +38,8 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
       BASE_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
@@ -65,9 +67,14 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
       E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
       E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
       BASE_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -76,12 +83,23 @@ jobs:
           cache: "npm"
       - name: Install dependencies
         run: npm ci
+      - name: Check if E2E env is configured
+        id: e2e
+        run: |
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Supabase test secrets not set — skipping E2E tests."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install Playwright browsers
+        if: steps.e2e.outputs.configured == 'true'
         run: npx playwright install chromium --with-deps
       - name: Run Playwright tests
+        if: steps.e2e.outputs.configured == 'true'
         run: npx playwright test
       - name: Upload Playwright report
-        if: always()
+        if: always() && steps.e2e.outputs.configured == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -101,7 +119,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build Next.js
-        run: npm run build
+        run: |
+          export NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL:-https://placeholder.supabase.co}"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-placeholder}"
+          export SUPABASE_URL="${SUPABASE_URL:-$NEXT_PUBLIC_SUPABASE_URL}"
+          export SUPABASE_PUBLISHABLE_KEY="${SUPABASE_PUBLISHABLE_KEY:-$NEXT_PUBLIC_SUPABASE_ANON_KEY}"
+          export SUPABASE_SECRET_KEY="${SUPABASE_SECRET_KEY:-placeholder}"
+          npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}

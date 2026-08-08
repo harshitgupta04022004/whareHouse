@@ -9,14 +9,19 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, session, loading, needsOnboarding } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (loading) return;
+    if (user) {
       router.replace("/challans");
+      return;
     }
-  }, [user, loading, router]);
+    if (needsOnboarding || (session && !user)) {
+      router.replace("/onboarding");
+    }
+  }, [user, session, loading, needsOnboarding, router]);
 
   if (loading) {
     return (
@@ -44,7 +49,8 @@ export default function AuthLayout({
     );
   }
 
-  if (user) return null;
+  // Already signed in (with or without warehouse) — redirecting away
+  if (user || session) return null;
 
   return (
     <div className="aurora relative flex min-h-dvh items-center justify-center px-5 py-10">

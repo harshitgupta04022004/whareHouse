@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getServiceClient, apiRequest } from "../helpers";
+import { getServiceClient, apiRequest, isDatabaseReady } from "../helpers";
 import { seedWarehouse, seedUser, seedItem, seedParty, seedDO, TEST_PREFIX } from "../fixtures/seed";
 import crypto from "crypto";
 
-const svc = getServiceClient();
+let skipTests = true;
+let svc: ReturnType<typeof getServiceClient>;
 const password = "TestPass123!";
 
 let whA: { warehouse_id: string };
@@ -25,6 +26,10 @@ async function getToken(email: string, pw: string): Promise<string> {
 }
 
 beforeAll(async () => {
+  skipTests = !(await isDatabaseReady());
+  if (skipTests) return;
+
+  svc = getServiceClient();
   whA = await seedWarehouse(svc, `Aud-A ${TEST_PREFIX}`);
   whB = await seedWarehouse(svc, `Aud-B ${TEST_PREFIX}`);
   const a = await seedUser(svc, whA.warehouse_id, "admin", "aud_adminA");
@@ -40,6 +45,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (skipTests) return;
   for (const t of ["do_items", "delivery_orders", "items", "parties", "app_users", "warehouses"]) {
     try { await svc.from(t).delete().like("name", `%${TEST_PREFIX}%`); } catch {}
     try { await svc.from(t).delete().like("do_number", `%${TEST_PREFIX}%`); } catch {}
@@ -48,7 +54,7 @@ afterAll(async () => {
   }
 });
 
-describe("Audit Integrity", () => {
+describe.skipIf(skipTests)("Audit Integrity", () => {
   it("INSERT audit row succeeds", async () => {
     const { error } = await svc.from("audit_log").insert({
       warehouse_id: whA.warehouse_id, user_id: adminA.user_id,

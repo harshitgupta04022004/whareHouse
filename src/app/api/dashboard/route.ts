@@ -2,7 +2,6 @@ import { requireAuth } from "@/lib/auth";
 import { checkRouteAccess } from "@/lib/rbac";
 import { handleApiError, ValidationError } from "@/lib/errors";
 import { createServiceClient } from "@/lib/supabase";
-import { checkRateLimit } from "@/lib/rate-limit";
 
 const ROUTE_KEY = "GET /api/dashboard";
 
@@ -14,11 +13,13 @@ export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
     await checkRouteAccess(ROUTE_KEY, user);
-    await checkRateLimit("dashboard", user.userId);
 
     const url = new URL(request.url);
-    const startDate = url.searchParams.get("startDate");
-    const endDate = url.searchParams.get("endDate");
+    // Accept both startDate/endDate (API contract) and from/to (frontend)
+    const startDate =
+      url.searchParams.get("startDate") ?? url.searchParams.get("from");
+    const endDate =
+      url.searchParams.get("endDate") ?? url.searchParams.get("to");
 
     if (!startDate || !endDate) {
       throw new ValidationError("dates", "startDate and endDate are required");
@@ -29,10 +30,6 @@ export async function GET(request: Request) {
 
     const supabase = createServiceClient();
 
-    // Query the dashboard SQL from database.md
-    const { data, error } = await supabase.rpc("current_warehouse_id" as never).select();
-
-    // Direct SQL query via the service client for the dashboard aggregation
     const { data: products, error: productsError } = await supabase
       .from("items")
       .select("item_id, name, bag_size, warehouse_id")
@@ -52,7 +49,6 @@ export async function GET(request: Request) {
     );
 
     // Get date-filtered IN/OUT per product
-    // We need to join do_items with delivery_orders for date filtering
     const { data: filteredDoItems } = await supabase
       .from("do_items")
       .select(`
@@ -64,12 +60,11 @@ export async function GET(request: Request) {
       .gte("delivery_orders.date", startDate)
       .lte("delivery_orders.date", endDate);
 
-    // Aggregate filtered IN/OUT per item
     const filteredAgg = new Map<string, { total_in: number; total_out: number }>();
 
     if (filteredDoItems) {
       for (const row of filteredDoItems) {
-        const doRef = row.delivery_orders as { direction: string };
+        const doRef = row.delivery_orders as unknown as { direction: string };
         const existing = filteredAgg.get(row.item_id) ?? { total_in: 0, total_out: 0 };
 
         if (doRef.direction === "IN") {
@@ -84,10 +79,11 @@ export async function GET(request: Request) {
     const matrix = (products ?? []).map((item) => {
       const filtered = filteredAgg.get(item.item_id) ?? { total_in: 0, total_out: 0 };
       const summary = summaryMap.get(item.item_id);
-      const remaining = summary?.remaining ?? 0;
+      const remaining = Number(summary?.remaining ?? 0);
       const remainingBags = item.bag_size > 0 ? Math.floor(remaining / item.bag_size) : 0;
 
       return {
+        item_id: item.item_id,
         product: item.name,
         bag_size: item.bag_size,
         total_in: Math.round(filtered.total_in * 100) / 100,
@@ -100,6 +96,7 @@ export async function GET(request: Request) {
     return Response.json({
       startDate,
       endDate,
+      data: matrix,
       products: matrix,
     });
   } catch (error) {

@@ -40,19 +40,6 @@ export class PermissionError extends AppError {
   }
 }
 
-export class RateLimitError extends AppError {
-  public retryAfter: number;
-  constructor(retryAfter: number) {
-    super(
-      "rate_limit_exceeded",
-      `Too many requests. Please wait ${retryAfter} seconds.`,
-      429,
-    );
-    this.retryAfter = retryAfter;
-    this.name = "RateLimitError";
-  }
-}
-
 // ─── Database Error Mapping ───────────────────────────────────────────
 
 export function mapDbError(error: { code?: string; message?: string }): AppError {
@@ -137,13 +124,10 @@ export function jsonError(message: string, status: number, code?: string) {
 
 export function handleApiError(error: unknown) {
   if (error instanceof AppError) {
-    const body: Record<string, unknown> = {
+    const body = {
       error: error.code,
       message: error.message,
     };
-    if (error instanceof RateLimitError) {
-      body.retryAfter = error.retryAfter;
-    }
     return Response.json(body, { status: error.statusCode });
   }
 

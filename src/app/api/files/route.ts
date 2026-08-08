@@ -3,7 +3,6 @@ import { checkRouteAccess } from "@/lib/rbac";
 import { handleApiError, ValidationError } from "@/lib/errors";
 import { createServiceClient } from "@/lib/supabase";
 import { writeAudit } from "@/lib/audit";
-import { checkRateLimit } from "@/lib/rate-limit";
 import { validateFile, getFolderPath, uploadToDrive, deleteFromDrive, isDriveConfigured } from "@/lib/drive";
 
 const ROUTE_KEY_GET = "GET /api/files";
@@ -14,7 +13,6 @@ export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
     await checkRouteAccess(ROUTE_KEY_POST, user);
-    await checkRateLimit("files:upload", user.userId);
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;

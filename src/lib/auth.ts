@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerClient, createServiceClient } from "./supabase";
-import { NotFoundError, PermissionError } from "./errors";
+import { PermissionError } from "./errors";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -13,31 +13,58 @@ export interface AuthUser {
   warehouseName: string;
 }
 
+export interface AuthIdentity {
+  userId: string;
+  email: string;
+  name: string;
+}
+
 // ─── Auth Helpers ─────────────────────────────────────────────────────
 
 /**
- * Get the authenticated user from the request.
- * Returns the full AuthUser with warehouse info, or null if not authenticated.
+ * Verify JWT and return the Supabase Auth identity (no app_users required).
+ * Used for onboarding (create warehouse) before the user has a warehouse.
  */
-export async function getAuthUser(request: Request): Promise<AuthUser | null> {
+export async function getAuthIdentity(request: Request): Promise<AuthIdentity | null> {
   const supabase = createServerClient(request);
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) return null;
+  if (error || !user?.email) return null;
 
-  // Look up app_users row (RLS auto-scopes to user's warehouse)
-  const { data: appUser, error: appError } = await supabase
+  const metaName =
+    typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "";
+
+  return {
+    userId: user.id,
+    email: user.email,
+    name: metaName || user.email.split("@")[0] || "User",
+  };
+}
+
+/**
+ * Get the authenticated app user (JWT + app_users row).
+ */
+export async function getAuthUser(request: Request): Promise<AuthUser | null> {
+  const identity = await getAuthIdentity(request);
+  if (!identity) return null;
+
+  const service = createServiceClient();
+  const { data: appUser, error: appError } = await service
     .from("app_users")
-    .select("user_id, email, name, role, warehouse_id, warehouses!inner(name)")
-    .eq("user_id", user.id)
+    .select("user_id, email, name, role, warehouse_id")
+    .eq("user_id", identity.userId)
     .single();
 
   if (appError || !appUser) return null;
 
-  const wh = appUser.warehouses as { name: string };
+  const { data: warehouse } = await service
+    .from("warehouses")
+    .select("name")
+    .eq("warehouse_id", appUser.warehouse_id)
+    .single();
 
   return {
     userId: appUser.user_id,
@@ -45,21 +72,30 @@ export async function getAuthUser(request: Request): Promise<AuthUser | null> {
     name: appUser.name,
     role: appUser.role as "admin" | "manager" | "staff",
     warehouseId: appUser.warehouse_id,
-    warehouseName: wh.name,
+    warehouseName: warehouse?.name ?? "Warehouse",
   };
 }
 
 /**
- * Require an authenticated user. Throws PermissionError if not authenticated.
+ * Require an authenticated user with a warehouse membership.
  */
 export async function requireAuth(request: Request): Promise<AuthUser> {
+  const identity = await getAuthIdentity(request);
+  if (!identity) {
+    throw new PermissionError("Not authenticated. Please sign in again.");
+  }
+
   const user = await getAuthUser(request);
-  if (!user) throw new PermissionError("Not authenticated.");
+  if (!user) {
+    throw new PermissionError(
+      "No warehouse yet. Create a warehouse to continue.",
+    );
+  }
   return user;
 }
 
 /**
- * Require a specific role. Throws PermissionError if role doesn't match.
+ * Require a specific role.
  */
 export async function requireRole(
   request: Request,
@@ -74,24 +110,14 @@ export async function requireRole(
   return user;
 }
 
-/**
- * Create a Supabase client with the user's session attached (for RLS).
- */
 export function createUserClient(request: Request): SupabaseClient {
   return createServerClient(request);
 }
 
-/**
- * Service role client (bypasses RLS). For admin-only operations
- * like inviting users (inserting into app_users).
- */
 export function getServiceClient(): SupabaseClient {
   return createServiceClient();
 }
 
-/**
- * Get the IP address from the request (for audit logging).
- */
 export function getClientIp(request: Request): string | null {
   return (
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -100,9 +126,6 @@ export function getClientIp(request: Request): string | null {
   );
 }
 
-/**
- * Get the User-Agent from the request (for audit logging).
- */
 export function getUserAgent(request: Request): string | null {
   return request.headers.get("user-agent") ?? null;
 }

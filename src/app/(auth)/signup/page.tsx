@@ -29,7 +29,7 @@ export default function SignupPage() {
       setError(result.error);
       setLoading(false);
     } else {
-      router.push("/challans");
+      router.push("/");
       router.refresh();
     }
   };

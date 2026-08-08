@@ -21,10 +21,24 @@ async function authedFetch(path: string, options: RequestInit = {}) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `Request failed: ${res.status}`);
+    throw new Error(
+      (typeof body.message === "string" && body.message) ||
+        (typeof body.error === "string" && body.error) ||
+        `Request failed: ${res.status}`,
+    );
   }
 
   return res.json();
+}
+
+// ─── Warehouses (onboarding) ──────────────────────────────────────
+
+export async function createWarehouse(data: { name: string; adminName?: string }) {
+  return authedFetch("/warehouses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
 }
 
 // ─── Delivery Orders ──────────────────────────────────────────────
@@ -201,7 +215,11 @@ export async function uploadFile(formData: FormData) {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || `Upload failed: ${res.status}`);
+    throw new Error(
+      (typeof body.message === "string" && body.message) ||
+        (typeof body.error === "string" && body.error) ||
+        `Upload failed: ${res.status}`,
+    );
   }
 
   return res.json();

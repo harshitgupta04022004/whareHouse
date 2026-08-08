@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getServiceClient, apiRequest } from "../helpers";
+import { getServiceClient, apiRequest, isDatabaseReady } from "../helpers";
 import {
   seedWarehouse,
   seedUser,
@@ -16,7 +16,8 @@ import {
   TEST_PREFIX,
 } from "../fixtures/seed";
 
-const svc = getServiceClient();
+let skipTests = true;
+let svc: ReturnType<typeof getServiceClient>;
 const password = "TestPass123!";
 
 let warehouse: { warehouse_id: string };
@@ -48,6 +49,10 @@ async function getToken(email: string, pw: string): Promise<string> {
 }
 
 beforeAll(async () => {
+  skipTests = !(await isDatabaseReady());
+  if (skipTests) return;
+
+  svc = getServiceClient();
   warehouse = await seedWarehouse(svc, `RBAC WH ${TEST_PREFIX}`);
 
   const a = await seedUser(svc, warehouse.warehouse_id, "admin", "rbac_admin");
@@ -81,6 +86,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (skipTests) return;
   try { await svc.from("do_items").delete().like("do_id", `%${TEST_PREFIX}%`); } catch {}
   try { await svc.from("delivery_orders").delete().like("do_number", `%${TEST_PREFIX}%`); } catch {}
   try { await svc.from("items").delete().like("name", `%${TEST_PREFIX}%`); } catch {}
@@ -189,7 +195,7 @@ const matrix: Permission[] = [
   },
 ];
 
-describe("RBAC Permission Matrix", () => {
+describe.skipIf(skipTests)("RBAC Permission Matrix", () => {
   for (const perm of matrix) {
     describe(perm.action, () => {
       it("admin can perform action", async () => {

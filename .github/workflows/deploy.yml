@@ -29,18 +29,32 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
+      - name: Check Vercel credentials
+        id: creds
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ] || [ -z "${{ secrets.VERCEL_ORG_ID }}" ] || [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID not set — skipping GitHub Actions deploy (Vercel Git integration still works)."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install Vercel CLI
+        if: steps.creds.outputs.configured == 'true'
         run: npm install -g vercel
       - name: Pull Vercel environment
+        if: steps.creds.outputs.configured == 'true'
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build
+        if: steps.creds.outputs.configured == 'true'
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy to preview
+        if: steps.creds.outputs.configured == 'true'
         id: deploy
         run: |
           URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$URL" >> $GITHUB_OUTPUT
       - name: Smoke test
+        if: steps.creds.outputs.configured == 'true' && steps.deploy.outputs.url != ''
         run: |
           curl -sf ${{ steps.deploy.outputs.url }}/api/health || exit 1
           curl -sf ${{ steps.deploy.outputs.url }}/ | head -1 || exit 1
@@ -60,18 +74,32 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
+      - name: Check Vercel credentials
+        id: creds
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ] || [ -z "${{ secrets.VERCEL_ORG_ID }}" ] || [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID not set — skipping GitHub Actions deploy (Vercel Git integration still works)."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install Vercel CLI
+        if: steps.creds.outputs.configured == 'true'
         run: npm install -g vercel
       - name: Pull Vercel environment
+        if: steps.creds.outputs.configured == 'true'
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build
+        if: steps.creds.outputs.configured == 'true'
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy to production
+        if: steps.creds.outputs.configured == 'true'
         id: deploy
         run: |
           URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$URL" >> $GITHUB_OUTPUT
       - name: Post-deploy smoke test
+        if: steps.creds.outputs.configured == 'true' && steps.deploy.outputs.url != ''
         run: |
           sleep 10
           curl -sf ${{ steps.deploy.outputs.url }}/api/health || exit 1
@@ -79,7 +107,7 @@ jobs:
           curl -sf ${{ steps.deploy.outputs.url }}/ | head -1 || exit 1
           echo "Production smoke test passed"
       - name: Rollback on failure
-        if: failure()
+        if: failure() && steps.creds.outputs.configured == 'true'
         run: |
           echo "Deploy failed — consider rollback"
           echo "To rollback: vercel rollback --token=${{ secrets.VERCEL_TOKEN }}"

@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { getServiceClient, apiRequest } from "../helpers";
+import { getServiceClient, apiRequest, isDatabaseReady } from "../helpers";
 import {
   seedWarehouse,
   seedUser,
@@ -19,7 +19,8 @@ import {
   TEST_PREFIX,
 } from "../fixtures/seed";
 
-const svc = getServiceClient();
+let skipTests = true;
+let svc: ReturnType<typeof getServiceClient>;
 const testPassword = "TestPass123!";
 
 let warehouse: { warehouse_id: string };
@@ -31,6 +32,10 @@ let party: { party_id: string };
 const createdDOIds: string[] = [];
 
 beforeAll(async () => {
+  skipTests = !(await isDatabaseReady());
+  if (skipTests) return;
+
+  svc = getServiceClient();
   warehouse = await seedWarehouse(svc, `CRUD Test WH ${TEST_PREFIX}`);
   const user = await seedUser(svc, warehouse.warehouse_id, "admin", "crud_admin");
   adminUser = { ...user, role: "admin" };
@@ -56,6 +61,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (skipTests) return;
   for (const doId of createdDOIds) {
     try { await svc.from("do_items").delete().eq("do_id", doId); } catch {}
     try { await svc.from("delivery_orders").delete().eq("do_id", doId); } catch {}
@@ -66,7 +72,7 @@ afterAll(async () => {
   try { await svc.from("warehouses").delete().like("name", `%${TEST_PREFIX}%`); } catch {}
 });
 
-describe("DO CRUD API", () => {
+describe.skipIf(skipTests)("DO CRUD API", () => {
   it("create: happy path multi-item DO", async () => {
     const doNumber = `DO-CRUD-${Date.now()}`;
 

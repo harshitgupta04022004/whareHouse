@@ -120,8 +120,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: { data: { name } },
       });
       if (error) {
-        const message = error.message.toLowerCase().includes("rate limit")
-          ? "Supabase temporarily blocked signup emails. If this account already exists, use Sign in. Otherwise wait a few minutes and try again."
+        const normalizedMessage = error.message.toLowerCase();
+        const mayAlreadyExist =
+          normalizedMessage.includes("rate limit") ||
+          normalizedMessage.includes("already registered") ||
+          normalizedMessage.includes("already exists");
+
+        // A user may accidentally use Create account for an existing login.
+        // Try their credentials directly instead of requesting another email.
+        if (mayAlreadyExist) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (!signInError) return {};
+        }
+
+        const message = normalizedMessage.includes("rate limit")
+          ? "Signup email quota is temporarily exhausted. If you already have an account, use Sign in. For a new account, try again later."
           : error.message;
         return { error: message };
       }

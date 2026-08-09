@@ -22,25 +22,43 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = getSupabase();
+    let invalidTimer: ReturnType<typeof setTimeout> | undefined;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setValidToken(true);
+        sessionStorage.removeItem("resetRedirect");
+      }
+      if (event === "SIGNED_IN" && typeof window !== "undefined" && window.location.hash.includes("type=invite")) {
+        setValidToken(true);
+        sessionStorage.removeItem("resetRedirect");
       }
     });
 
-    // If no token found from hash, mark as invalid after a delay
-    const hasHash = typeof window !== "undefined" && window.location.hash.includes("access_token");
-    if (!hasHash) {
-      const timer = setTimeout(() => {
-        setValidToken((prev) => prev === null ? false : prev);
-      }, 2000);
-      return () => {
-        subscription.unsubscribe();
-        clearTimeout(timer);
-      };
+    const hasHash =
+      typeof window !== "undefined" && window.location.hash.includes("access_token");
+
+    if (hasHash) {
+      setValidToken(true);
+      sessionStorage.removeItem("resetRedirect");
+    } else {
+      // Hash may already be cleared by Supabase; accept existing recovery session
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session || sessionStorage.getItem("resetRedirect") === "1") {
+          setValidToken(true);
+          sessionStorage.removeItem("resetRedirect");
+        } else {
+          invalidTimer = setTimeout(() => {
+            setValidToken((prev) => (prev === null ? false : prev));
+          }, 2000);
+        }
+      });
     }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (invalidTimer) clearTimeout(invalidTimer);
+    };
   }, []);
 
   const validate = (): string | null => {

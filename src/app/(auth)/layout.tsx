@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function AuthLayout({
@@ -11,9 +11,26 @@ export default function AuthLayout({
 }) {
   const { user, session, loading, needsOnboarding } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Password recovery/invite creates a temporary session — do NOT send those users to /challans
+  const [isRecoveryFlow] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const hash = window.location.hash;
+    return (
+      pathname === "/reset-password" ||
+      hash.includes("type=recovery") ||
+      hash.includes("type=invite") ||
+      sessionStorage.getItem("resetRedirect") === "1"
+    );
+  });
+
+  const allowAuthedSession = isRecoveryFlow || pathname === "/reset-password";
 
   useEffect(() => {
     if (loading) return;
+    // Stay on reset-password while the user sets a new password
+    if (allowAuthedSession) return;
     if (user) {
       router.replace("/challans");
       return;
@@ -21,7 +38,7 @@ export default function AuthLayout({
     if (needsOnboarding || (session && !user)) {
       router.replace("/onboarding");
     }
-  }, [user, session, loading, needsOnboarding, router]);
+  }, [user, session, loading, needsOnboarding, router, allowAuthedSession]);
 
   if (loading) {
     return (
@@ -49,8 +66,8 @@ export default function AuthLayout({
     );
   }
 
-  // Already signed in (with or without warehouse) — redirecting away
-  if (user || session) return null;
+  // Already signed in — redirecting away (except during password reset)
+  if (!allowAuthedSession && (user || session)) return null;
 
   return (
     <div className="aurora relative flex min-h-dvh items-center justify-center px-5 py-10">

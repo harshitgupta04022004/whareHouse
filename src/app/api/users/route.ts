@@ -66,6 +66,7 @@ export async function GET(request: Request) {
         .select("user_id, name, email, role, created_at, invite_status, invited_at, last_seen_at")
         .eq("warehouse_id", user.warehouseId)
         .eq("user_id", userId)
+        .is("deleted_at", null)
         .maybeSingle();
 
       if (error) throw error;
@@ -79,6 +80,7 @@ export async function GET(request: Request) {
       .from("app_users")
       .select("user_id, name, email, role, created_at, invite_status, invited_at, last_seen_at")
       .eq("warehouse_id", user.warehouseId)
+      .is("deleted_at", null)
       .order("name");
 
     if (error) throw error;
@@ -113,11 +115,59 @@ export async function POST(request: Request) {
 
     const { data: existing } = await supabase
       .from("app_users")
-      .select("user_id, warehouse_id")
+      .select("user_id, warehouse_id, deleted_at, name, email, role")
       .eq("email", email)
-      .single();
+      .maybeSingle();
 
-    if (existing) {
+    // Re-invite a soft-deleted user in this warehouse — restore row, keep audit history linked.
+    if (existing?.deleted_at && existing.warehouse_id === user.warehouseId) {
+      const { error: restoreError } = await supabase
+        .from("app_users")
+        .update({
+          deleted_at: null,
+          name,
+          role,
+          invite_status: "pending",
+          invited_at: new Date().toISOString(),
+          last_seen_at: null,
+        })
+        .eq("user_id", existing.user_id);
+
+      if (restoreError) throw restoreError;
+
+      try {
+        await supabase.auth.admin.updateUserById(existing.user_id, {
+          ban_duration: "none",
+          user_metadata: { name, warehouse_id: user.warehouseId, role },
+        });
+      } catch {
+        // Auth may already be usable
+      }
+
+      await writeAudit(
+        supabase,
+        {
+          warehouseId: user.warehouseId,
+          userId: user.userId,
+          actorName: user.name,
+          entity: "user",
+          entityId: existing.user_id,
+          action: "add_user",
+          newData: { name, email, role, restored: true },
+        },
+        request,
+      );
+
+      return Response.json(
+        {
+          user_id: existing.user_id,
+          message: "User restored. They can sign in again with the same account.",
+        },
+        { status: 201 },
+      );
+    }
+
+    if (existing && !existing.deleted_at) {
       throw new ConflictError("Email already registered.");
     }
 
@@ -254,6 +304,7 @@ export async function PATCH(request: Request) {
       .select("*")
       .eq("user_id", user_id)
       .eq("warehouse_id", user.warehouseId)
+      .is("deleted_at", null)
       .single();
 
     if (!existing) throw new ValidationError("user_id", "User not found in this warehouse");
@@ -263,7 +314,8 @@ export async function PATCH(request: Request) {
         .from("app_users")
         .select("user_id", { count: "exact", head: true })
         .eq("warehouse_id", user.warehouseId)
-        .eq("role", "admin");
+        .eq("role", "admin")
+        .is("deleted_at", null);
 
       if (count !== null && count <= 1) {
         throw new PermissionError(
@@ -324,6 +376,7 @@ export async function DELETE(request: Request) {
       .select("*")
       .eq("user_id", targetUserId)
       .eq("warehouse_id", user.warehouseId)
+      .is("deleted_at", null)
       .single();
 
     if (!existing) throw new ValidationError("id", "User not found in this warehouse");
@@ -333,35 +386,52 @@ export async function DELETE(request: Request) {
         .from("app_users")
         .select("user_id", { count: "exact", head: true })
         .eq("warehouse_id", user.warehouseId)
-        .eq("role", "admin");
+        .eq("role", "admin")
+        .is("deleted_at", null);
 
       if (count !== null && count <= 1) {
         throw new PermissionError("Cannot remove the last admin.");
       }
     }
 
-    // Write audit before delete so actor_name trigger can also snapshot the
-    // removed user's historical rows, and remove_user keeps full old_data.
-    await writeAudit(supabase, {
-      warehouseId: user.warehouseId,
-      userId: user.userId,
-      actorName: user.name,
-      entity: "user",
-      entityId: targetUserId,
-      action: "remove_user",
-      oldData: existing as unknown as Record<string, unknown>,
-    }, request);
-
+    // Soft-delete only — never delete audit_log rows or the app_users PK used by audit.
+    const deletedAt = new Date().toISOString();
     const { error } = await supabase
       .from("app_users")
-      .delete()
-      .eq("user_id", targetUserId);
+      .update({ deleted_at: deletedAt })
+      .eq("user_id", targetUserId)
+      .eq("warehouse_id", user.warehouseId)
+      .is("deleted_at", null);
 
     if (error) throw error;
 
-    await supabase.auth.admin.deleteUser(targetUserId);
+    // Ban auth login without deleting the auth user (keeps FK + audit history).
+    try {
+      await supabase.auth.admin.updateUserById(targetUserId, {
+        ban_duration: "876000h",
+      });
+    } catch {
+      // Ban is best-effort; soft-delete already blocks app access.
+    }
 
-    return Response.json({ message: "User removed." });
+    await writeAudit(
+      supabase,
+      {
+        warehouseId: user.warehouseId,
+        userId: user.userId,
+        actorName: user.name,
+        entity: "user",
+        entityId: targetUserId,
+        action: "remove_user",
+        oldData: existing as unknown as Record<string, unknown>,
+        newData: { deleted_at: deletedAt },
+      },
+      request,
+    );
+
+    return Response.json({
+      message: "User removed. Their audit history is preserved.",
+    });
   } catch (error) {
     return handleApiError(error);
   }

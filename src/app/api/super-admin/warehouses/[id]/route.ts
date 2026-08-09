@@ -40,6 +40,7 @@ export async function GET(
             "user_id, name, email, role, invite_status, last_seen_at, created_at",
           )
           .eq("warehouse_id", id)
+          .is("deleted_at", null)
           .order("name"),
         supabase
           .from("items")
@@ -129,6 +130,7 @@ export async function GET(
             "user_id, name, email, role, invite_status, last_seen_at, invited_at, created_at",
           )
           .eq("warehouse_id", id)
+          .is("deleted_at", null)
           .order("name");
         if (qError) throw qError;
         return Response.json({ data: data ?? [] });

@@ -45,6 +45,7 @@ export async function PATCH(
       .select("user_id, name, email, role, warehouse_id")
       .eq("user_id", parsed.data.user_id)
       .eq("warehouse_id", warehouseId)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (targetError) throw targetError;
@@ -58,6 +59,7 @@ export async function PATCH(
         .from("app_users")
         .update({ role: parsed.data.role })
         .eq("user_id", target.user_id)
+        .is("deleted_at", null)
         .select("user_id, name, email, role")
         .single();
       if (error || !updated) throw error ?? new Error("Update failed");
@@ -65,6 +67,7 @@ export async function PATCH(
       await writeAudit(supabase, {
         warehouseId,
         userId: admin.userId,
+        actorName: admin.name,
         entity: "user",
         entityId: target.user_id,
         action: "super_admin_update_user_role",
@@ -77,52 +80,50 @@ export async function PATCH(
       return Response.json({ data: updated });
     }
 
-    // remove
+    // Soft-remove — never delete audit_log or the app_users row used by history.
     const { count: adminCount } = await supabase
       .from("app_users")
       .select("user_id", { count: "exact", head: true })
       .eq("warehouse_id", warehouseId)
-      .eq("role", "admin");
+      .eq("role", "admin")
+      .is("deleted_at", null);
 
     if (target.role === "admin" && (adminCount ?? 0) <= 1) {
       throw new ConflictError("Cannot remove the last admin of a warehouse.");
     }
 
-    const { count: doCount } = await supabase
-      .from("delivery_orders")
-      .select("do_id", { count: "exact", head: true })
-      .eq("user_id", target.user_id);
-
-    if ((doCount ?? 0) > 0) {
-      throw new ConflictError(
-        "Cannot remove user with existing DOs. Reassign or delete their DOs first.",
-      );
-    }
-
+    const deletedAt = new Date().toISOString();
     const { error: deleteError } = await supabase
       .from("app_users")
-      .delete()
-      .eq("user_id", target.user_id);
+      .update({ deleted_at: deletedAt })
+      .eq("user_id", target.user_id)
+      .is("deleted_at", null);
     if (deleteError) throw deleteError;
 
     try {
-      await supabase.auth.admin.deleteUser(target.user_id);
+      await supabase.auth.admin.updateUserById(target.user_id, {
+        ban_duration: "876000h",
+      });
     } catch {
-      // ignore auth cleanup failures
+      // Ban is best-effort
     }
 
     await writeAudit(supabase, {
       warehouseId,
       userId: admin.userId,
+      actorName: admin.name,
       entity: "user",
       entityId: target.user_id,
       action: "super_admin_remove_user",
       oldData: target as unknown as Record<string, unknown>,
+      newData: { deleted_at: deletedAt },
       ipAddress: getClientIp(request),
       userAgent: getUserAgent(request),
     });
 
-    return Response.json({ message: "User removed." });
+    return Response.json({
+      message: "User removed. Their audit history is preserved.",
+    });
   } catch (error) {
     return handleApiError(error);
   }

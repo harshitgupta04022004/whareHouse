@@ -43,6 +43,7 @@ export type Database = {
           invite_status: "pending" | "accepted";
           invited_at: string | null;
           last_seen_at: string | null;
+          deleted_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -55,6 +56,7 @@ export type Database = {
           invite_status?: "pending" | "accepted";
           invited_at?: string | null;
           last_seen_at?: string | null;
+          deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -67,6 +69,7 @@ export type Database = {
           invite_status?: "pending" | "accepted";
           invited_at?: string | null;
           last_seen_at?: string | null;
+          deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

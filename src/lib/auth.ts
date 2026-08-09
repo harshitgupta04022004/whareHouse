@@ -59,9 +59,10 @@ export async function getAuthUser(request: Request): Promise<AuthUser | null> {
   const service = createServiceClient();
   const { data: appUser, error: appError } = await service
     .from("app_users")
-    .select("user_id, email, name, role, warehouse_id")
+    .select("user_id, email, name, role, warehouse_id, deleted_at")
     .eq("user_id", identity.userId)
-    .single();
+    .is("deleted_at", null)
+    .maybeSingle();
 
   if (appError || !appUser) return null;
 

@@ -32,7 +32,8 @@ async function warehouseCounts(
     supabase
       .from("app_users")
       .select("user_id", { count: "exact", head: true })
-      .eq("warehouse_id", warehouseId),
+      .eq("warehouse_id", warehouseId)
+      .is("deleted_at", null),
     supabase
       .from("items")
       .select("item_id", { count: "exact", head: true })

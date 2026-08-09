@@ -34,14 +34,14 @@ async function supabasePost(table, rows) {
 }
 
 const DEFAULT_ITEMS = [
-  { name: "Wheat", bag_size: 50 },
-  { name: "Rice", bag_size: 100 },
-  { name: "Salt", bag_size: 25 },
-  { name: "Sugar", bag_size: 50 },
-  { name: "Duddy", bag_size: 50 },
-  { name: "Nuts", bag_size: 50 },
-  { name: "Gram", bag_size: 50 },
-  { name: "Malta", bag_size: 50 },
+  { name: "Gram (चना)", bag_size: 50 },
+  { name: "Maize (मक्का)", bag_size: 50 },
+  { name: "Nuts (मेवा)", bag_size: 50 },
+  { name: "Paddy (धान)", bag_size: 50 },
+  { name: "Rice (चावल)", bag_size: 50 },
+  { name: "Salt (नमक)", bag_size: 50 },
+  { name: "Sugar (चीनी)", bag_size: 50 },
+  { name: "Wheat (गेहूं)", bag_size: 50 },
 ];
 
 const DEFAULT_PARTIES = [

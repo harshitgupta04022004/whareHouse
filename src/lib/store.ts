@@ -3,14 +3,14 @@ import { AppState, DO, User, WarehouseItem } from "./types";
 const STORAGE_KEY = "radheshyam_warehouse";
 
 const DEFAULT_ITEMS: WarehouseItem[] = [
-  { id: "1", name: "Wheat", count: 10 },
-  { id: "2", name: "Rice", count: 8 },
-  { id: "3", name: "Salt", count: 3 },
-  { id: "4", name: "Sugar", count: 7 },
-  { id: "5", name: "Paddy", count: 1 },
-  { id: "6", name: "Nuts", count: 3 },
-  { id: "7", name: "Gram", count: 1 },
-  { id: "8", name: "Malza", count: 4 },
+  { id: "1", name: "Gram (चना)", count: 0 },
+  { id: "2", name: "Maize (मक्का)", count: 0 },
+  { id: "3", name: "Nuts (मेवा)", count: 0 },
+  { id: "4", name: "Paddy (धान)", count: 0 },
+  { id: "5", name: "Rice (चावल)", count: 0 },
+  { id: "6", name: "Salt (नमक)", count: 0 },
+  { id: "7", name: "Sugar (चीनी)", count: 0 },
+  { id: "8", name: "Wheat (गेहूं)", count: 0 },
 ];
 
 function getDefaultState(): AppState {

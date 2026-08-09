@@ -313,6 +313,7 @@ export interface DriveIntegrationStatus {
   folder_name?: string | null;
   updated_at?: string;
   callback_url?: string;
+  mode?: "oauth" | "service_account" | null;
   error?: string | null;
 }
 

@@ -106,6 +106,9 @@ export function DriveIntegrationCard() {
                 <span className="font-semibold text-green-500">Connected</span>
                 {status.account_email ? ` as ${status.account_email}` : ""}
                 {status.folder_name ? ` · Folder: ${status.folder_name}` : ""}
+                {status.mode === "service_account"
+                  ? " · using service account fallback"
+                  : ""}
               </>
             ) : (
               <>

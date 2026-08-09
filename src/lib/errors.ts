@@ -122,6 +122,27 @@ export function jsonError(message: string, status: number, code?: string) {
   );
 }
 
+function summarizeUnknownError(error: unknown): string {
+  if (!(error instanceof Error)) return "unknown_error";
+
+  const withResponse = error as Error & {
+    response?: { data?: { error?: string; error_description?: string }; status?: number };
+    code?: string | number;
+    status?: number;
+  };
+  const data = withResponse.response?.data;
+  return [
+    withResponse.message,
+    data?.error,
+    data?.error_description,
+    withResponse.code != null ? `code=${withResponse.code}` : null,
+    withResponse.status != null ? `status=${withResponse.status}` : null,
+    data ? null : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+}
+
 export function handleApiError(error: unknown) {
   if (error instanceof AppError) {
     const body = {
@@ -131,7 +152,8 @@ export function handleApiError(error: unknown) {
     return Response.json(body, { status: error.statusCode });
   }
 
-  console.error("Unhandled API error:", error);
+  // Avoid logging full Google client payloads (can include refresh tokens).
+  console.error("Unhandled API error:", summarizeUnknownError(error));
   return Response.json(
     { error: "internal_error", message: "Something went wrong." },
     { status: 500 },

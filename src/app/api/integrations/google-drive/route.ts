@@ -24,6 +24,7 @@ export async function GET(request: Request) {
       account_email: integration.account_email,
       folder_name: connection.folderName ?? null,
       updated_at: integration.updated_at,
+      mode: connection.mode ?? null,
       error: connection.ok ? null : connection.error,
     });
   } catch (error) {

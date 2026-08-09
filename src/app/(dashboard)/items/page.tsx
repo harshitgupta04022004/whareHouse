@@ -84,7 +84,7 @@ export default function ItemsPage() {
     }
 
     try {
-      await updateItem(editingId, { name: editName.trim(), bag_size: editBagSize });
+      await updateItem(editingId, { item_id: editingId, name: editName.trim(), bag_size: editBagSize });
       handleCancelEdit();
       fetchItems();
     } catch (err) {

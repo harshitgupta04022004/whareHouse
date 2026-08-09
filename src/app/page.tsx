@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function HomePage() {
-  const { user, session, loading, needsOnboarding } = useAuth();
+  const { user, session, loading, needsOnboarding, isSuperAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -35,13 +35,13 @@ export default function HomePage() {
       return;
     }
     if (needsOnboarding) {
-      router.replace("/onboarding");
+      router.replace(isSuperAdmin ? "/super-admin" : "/onboarding");
       return;
     }
     if (user) {
       router.replace("/challans");
     }
-  }, [user, session, loading, needsOnboarding, router]);
+  }, [user, session, loading, needsOnboarding, isSuperAdmin, router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

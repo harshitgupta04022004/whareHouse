@@ -6,7 +6,15 @@ import { useAuth } from "@/components/AuthProvider";
 import { createWarehouse } from "@/lib/api-client";
 
 export default function OnboardingPage() {
-  const { session, user, loading, needsOnboarding, refreshUser, signOut } = useAuth();
+  const {
+    session,
+    user,
+    loading,
+    needsOnboarding,
+    isSuperAdmin,
+    refreshUser,
+    signOut,
+  } = useAuth();
   const router = useRouter();
   const [warehouseName, setWarehouseName] = useState("");
   const [adminName, setAdminName] = useState("");
@@ -21,8 +29,12 @@ export default function OnboardingPage() {
     }
     if (user) {
       router.replace("/challans");
+      return;
     }
-  }, [loading, session, user, router]);
+    if (isSuperAdmin) {
+      router.replace("/super-admin");
+    }
+  }, [loading, session, user, isSuperAdmin, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

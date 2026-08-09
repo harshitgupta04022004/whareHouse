@@ -197,6 +197,71 @@ export async function pingUserPresence() {
   return authedFetch("/users/presence", { method: "POST" });
 }
 
+// ─── Super admin ──────────────────────────────────────────────────
+
+export async function listAllWarehouses(includeDeleted = false) {
+  const qs = includeDeleted ? "?includeDeleted=true" : "";
+  return authedFetch(`/super-admin/warehouses${qs}`);
+}
+
+export async function createWarehouseAsSuperAdmin(name: string) {
+  return authedFetch("/super-admin/warehouses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function updateWarehouseAsSuperAdmin(data: {
+  warehouse_id: string;
+  name?: string;
+  is_deleted?: boolean;
+}) {
+  return authedFetch("/super-admin/warehouses", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteWarehouseAsSuperAdmin(
+  warehouseId: string,
+  mode: "soft" | "hard" = "soft",
+) {
+  return authedFetch(
+    `/super-admin/warehouses?id=${encodeURIComponent(warehouseId)}&mode=${mode}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function getWarehouseAsSuperAdmin(warehouseId: string) {
+  return authedFetch(`/super-admin/warehouses/${warehouseId}`);
+}
+
+export async function getWarehouseEntityAsSuperAdmin(
+  warehouseId: string,
+  entity: "users" | "items" | "parties" | "dos" | "files" | "audit",
+  limit = 200,
+) {
+  const qs = new URLSearchParams({ entity, limit: String(limit) });
+  return authedFetch(`/super-admin/warehouses/${warehouseId}?${qs}`);
+}
+
+export async function mutateWarehouseUserAsSuperAdmin(
+  warehouseId: string,
+  data: {
+    action: "update_role" | "remove";
+    user_id: string;
+    role?: string;
+  },
+) {
+  return authedFetch(`/super-admin/warehouses/${warehouseId}/users`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
 // ─── Audit ────────────────────────────────────────────────────────
 
 export async function listAuditLog(params: {

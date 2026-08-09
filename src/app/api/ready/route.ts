@@ -8,12 +8,21 @@ export async function GET() {
 
   // Check Supabase Postgres
   try {
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-    const { error } = await supabase.from("warehouses").select("warehouse_id").limit(1);
+    const supabaseUrl =
+      process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey =
+      process.env.SUPABASE_SECRET_KEY ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Supabase URL/key not configured");
+    }
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { error } = await supabase
+      .from("warehouses")
+      .select("warehouse_id")
+      .limit(1);
     checks.db = error ? `error: ${error.message}` : "ok";
   } catch (err) {
     checks.db = `error: ${err instanceof Error ? err.message : "unknown"}`;
@@ -29,7 +38,8 @@ export async function GET() {
       : "not_configured";
 
   const allOk = Object.values(checks).every(
-    (value) => value === "ok" || value === "oauth_ready" || value === "not_configured",
+    (value) =>
+      value === "ok" || value === "oauth_ready" || value === "not_configured",
   );
 
   return NextResponse.json(
@@ -38,6 +48,6 @@ export async function GET() {
       ...checks,
       uptime: Math.floor((Date.now() - startTime) / 1000),
     },
-    { status: allOk ? 200 : 503 }
+    { status: allOk ? 200 : 503 },
   );
 }

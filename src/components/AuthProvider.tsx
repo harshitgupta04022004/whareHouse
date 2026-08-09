@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { getSupabase } from "@/lib/supabase-browser";
 import { logLoginAudit, logLogoutAudit, pingUserPresence } from "@/lib/api-client";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import type { Session } from "@supabase/supabase-js";
 
 export interface AppUser {
@@ -19,6 +20,8 @@ interface AuthContextType {
   session: Session | null;
   /** Logged in via Supabase Auth but no warehouse membership yet */
   needsOnboarding: boolean;
+  /** Platform super-admin (email allowlist) — UI hint only; APIs enforce server-side */
+  isSuperAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error?: string }>;
@@ -45,9 +48,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: warehouse } = await supabase
       .from("warehouses")
-      .select("name")
+      .select("name, is_deleted")
       .eq("warehouse_id", data.warehouse_id)
       .maybeSingle();
+
+    if (!warehouse || warehouse.is_deleted) return null;
 
     return {
       id: data.user_id,
@@ -55,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name: data.name,
       role: data.role as "admin" | "manager" | "staff",
       warehouseId: data.warehouse_id,
-      warehouseName: warehouse?.name ?? "Warehouse",
+      warehouseName: warehouse.name ?? "Warehouse",
     };
   }, [supabase]);
 
@@ -182,6 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const needsOnboarding = Boolean(session && !user);
+  const isSuperAdmin = isSuperAdminEmail(session?.user?.email ?? user?.email);
 
   return (
     <AuthContext.Provider
@@ -189,6 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         needsOnboarding,
+        isSuperAdmin,
         loading,
         signIn,
         signUp,

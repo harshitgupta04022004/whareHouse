@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerClient, createServiceClient } from "./supabase";
 import { PermissionError } from "./errors";
+import { isSuperAdminEmail } from "./super-admin";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -17,6 +18,10 @@ export interface AuthIdentity {
   userId: string;
   email: string;
   name: string;
+}
+
+export interface SuperAdminIdentity extends AuthIdentity {
+  isSuperAdmin: true;
 }
 
 // ─── Auth Helpers ─────────────────────────────────────────────────────
@@ -62,9 +67,11 @@ export async function getAuthUser(request: Request): Promise<AuthUser | null> {
 
   const { data: warehouse } = await service
     .from("warehouses")
-    .select("name")
+    .select("name, is_deleted")
     .eq("warehouse_id", appUser.warehouse_id)
     .single();
+
+  if (!warehouse || warehouse.is_deleted) return null;
 
   return {
     userId: appUser.user_id,
@@ -72,7 +79,7 @@ export async function getAuthUser(request: Request): Promise<AuthUser | null> {
     name: appUser.name,
     role: appUser.role as "admin" | "manager" | "staff",
     warehouseId: appUser.warehouse_id,
-    warehouseName: warehouse?.name ?? "Warehouse",
+    warehouseName: warehouse.name ?? "Warehouse",
   };
 }
 
@@ -108,6 +115,23 @@ export async function requireRole(
     );
   }
   return user;
+}
+
+/**
+ * Require a platform super-admin (email allowlist).
+ * Does not require warehouse membership — identity JWT is enough.
+ */
+export async function requireSuperAdmin(
+  request: Request,
+): Promise<SuperAdminIdentity> {
+  const identity = await getAuthIdentity(request);
+  if (!identity) {
+    throw new PermissionError("Not authenticated. Please sign in again.");
+  }
+  if (!isSuperAdminEmail(identity.email)) {
+    throw new PermissionError("Super admin access required.");
+  }
+  return { ...identity, isSuperAdmin: true };
 }
 
 export function createUserClient(request: Request): SupabaseClient {

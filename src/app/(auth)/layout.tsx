@@ -10,7 +10,7 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, session, loading, needsOnboarding } = useAuth();
+  const { user, session, loading, needsOnboarding, isSuperAdmin } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -37,9 +37,17 @@ export default function AuthLayout({
       return;
     }
     if (needsOnboarding || (session && !user)) {
-      router.replace("/onboarding");
+      router.replace(isSuperAdmin ? "/super-admin" : "/onboarding");
     }
-  }, [user, session, loading, needsOnboarding, router, allowAuthedSession]);
+  }, [
+    user,
+    session,
+    loading,
+    needsOnboarding,
+    isSuperAdmin,
+    router,
+    allowAuthedSession,
+  ]);
 
   if (loading) {
     return (

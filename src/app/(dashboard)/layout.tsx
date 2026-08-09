@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
 
@@ -10,8 +10,11 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, session, loading, needsOnboarding } = useAuth();
+  const { user, session, loading, needsOnboarding, isSuperAdmin } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const onSuperAdminRoute = pathname.startsWith("/super-admin");
+  const canAccessDashboard = Boolean(user) || (isSuperAdmin && onSuperAdminRoute);
 
   useEffect(() => {
     if (loading) return;
@@ -19,10 +22,19 @@ export default function DashboardLayout({
       router.replace("/login");
       return;
     }
-    if (needsOnboarding) {
+    // Super-admins may use /super-admin without warehouse membership.
+    if (needsOnboarding && !(isSuperAdmin && onSuperAdminRoute)) {
       router.replace("/onboarding");
     }
-  }, [user, session, loading, needsOnboarding, router]);
+  }, [
+    user,
+    session,
+    loading,
+    needsOnboarding,
+    isSuperAdmin,
+    onSuperAdminRoute,
+    router,
+  ]);
 
   if (loading) {
     return (
@@ -46,7 +58,7 @@ export default function DashboardLayout({
     );
   }
 
-  if (!user) return null;
+  if (!canAccessDashboard) return null;
 
   return (
     <div className="min-h-dvh flex flex-col">

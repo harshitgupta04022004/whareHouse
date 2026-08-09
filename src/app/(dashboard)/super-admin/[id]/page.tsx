@@ -155,10 +155,30 @@ export default function SuperAdminWarehousePage() {
 
   useEffect(() => {
     if (!isSuperAdmin || tab !== "audit" || !id) return;
-    void refreshAudit().catch((err) => {
-      setError(err instanceof Error ? err.message : "Failed to load audit");
-    });
-  }, [isSuperAdmin, tab, id, refreshAudit]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await listAuditAsSuperAdmin({
+          warehouseId: id,
+          from: auditFrom || undefined,
+          to: auditTo || undefined,
+          limit: 300,
+        });
+        if (cancelled) return;
+        setAuditRows(result.data ?? []);
+        setAuditSelected(new Set());
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to load audit",
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isSuperAdmin, tab, id, auditFrom, auditTo]);
 
   const handleRole = async (userId: string, role: string) => {
     try {

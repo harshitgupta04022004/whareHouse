@@ -59,6 +59,7 @@ export default function SuperAdminAuditPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     setError("");
+    setMessage("");
     try {
       const result = await listAuditAsSuperAdmin({
         warehouseId: warehouseId === "all" ? undefined : warehouseId,
@@ -82,15 +83,49 @@ export default function SuperAdminAuditPage() {
       router.replace("/challans");
       return;
     }
+    let cancelled = false;
     void listAllWarehouses(true)
-      .then((res) => setWarehouses(res.data ?? []))
-      .catch(() => setWarehouses([]));
+      .then((res) => {
+        if (!cancelled) setWarehouses(res.data ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setWarehouses([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [authLoading, isSuperAdmin, router]);
 
   useEffect(() => {
     if (authLoading || !isSuperAdmin) return;
-    void refresh();
-  }, [authLoading, isSuperAdmin, refresh]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await listAuditAsSuperAdmin({
+          warehouseId: warehouseId === "all" ? undefined : warehouseId,
+          from: from || undefined,
+          to: to || undefined,
+          limit: 200,
+        });
+        if (cancelled) return;
+        setRows(result.data ?? []);
+        setTotal(result.total ?? 0);
+        setSelected(new Set());
+        setError("");
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to load audit logs",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, isSuperAdmin, warehouseId, from, to]);
 
   const allSelected = useMemo(
     () => rows.length > 0 && rows.every((r) => selected.has(r.log_id)),

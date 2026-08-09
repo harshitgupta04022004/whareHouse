@@ -185,9 +185,9 @@ export default function NewDOPage() {
         <span className="text-ink-soft">New DO</span>
       </div>
 
-      <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">New DO <span className="text-[18px] text-ink-soft font-normal">/ नई डिलीवरी</span></h1>
-      <p className="text-[14px] text-ink-soft mb-1">Record a delivery — totals are calculated automatically.</p>
-      <p className="text-[13px] text-ink-faint mb-8">डिलीवरी दर्ज करें — कुल स्वतः गणना होता है।</p>
+      <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">New DO <span className="text-[16px] sm:text-[18px] text-ink-soft font-normal">/ नई डिलीवरी</span></h1>
+      <p className="text-[12px] sm:text-[14px] text-ink-soft mb-1">Record a delivery — totals are calculated automatically.</p>
+      <p className="text-[11px] sm:text-[13px] text-ink-faint mb-6 sm:mb-8">डिलीवरी दर्ज करें — कुल स्वतः गणना होता है।</p>
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-[13px] px-3 py-2 rounded-[11px] mb-6">
@@ -197,21 +197,21 @@ export default function NewDOPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info Card */}
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
             <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-soft">DO Number / डीओ नंबर</label>
-              <input type="text" value={doNumber} onChange={(e) => setDONumber(e.target.value)} className="focus-ring h-11 w-full rounded-[11px] border border-border bg-surface-2 px-3.5 text-[14px] text-ink placeholder:text-ink-faint transition-colors" placeholder="CH-001" />
+              <label className="mb-1.5 block text-[11px] sm:text-[12.5px] font-semibold text-ink-soft">DO Number / डीओ नंबर</label>
+              <input type="text" value={doNumber} onChange={(e) => setDONumber(e.target.value)} className="focus-ring h-10 sm:h-11 w-full rounded-[9px] sm:rounded-[11px] border border-border bg-surface-2 px-3 sm:px-3.5 text-[13px] sm:text-[14px] text-ink placeholder:text-ink-faint transition-colors" placeholder="CH-001" />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-soft">Date / तारीख</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="focus-ring h-11 w-full rounded-[11px] border border-border bg-surface-2 px-3.5 text-[14px] text-ink transition-colors" />
+              <label className="mb-1.5 block text-[11px] sm:text-[12.5px] font-semibold text-ink-soft">Date / तारीख</label>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="focus-ring h-10 sm:h-11 w-full rounded-[9px] sm:rounded-[11px] border border-border bg-surface-2 px-3 sm:px-3.5 text-[13px] sm:text-[14px] text-ink transition-colors" />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-soft">Party / पार्टी <span className="text-ink-faint">(optional / वैकल्पिक)</span></label>
-              <select value={partyId} onChange={(e) => { setPartyId(e.target.value); setPartyName(""); }} className="focus-ring h-11 w-full rounded-[11px] border border-border bg-surface-2 px-3.5 text-[14px] text-ink transition-colors appearance-none cursor-pointer">
+              <label className="mb-1.5 block text-[11px] sm:text-[12.5px] font-semibold text-ink-soft">Party / पार्टी <span className="text-ink-faint">(optional)</span></label>
+              <select value={partyId} onChange={(e) => { setPartyId(e.target.value); setPartyName(""); }} className="focus-ring h-10 sm:h-11 w-full rounded-[9px] sm:rounded-[11px] border border-border bg-surface-2 px-3 sm:px-3.5 text-[13px] sm:text-[14px] text-ink transition-colors appearance-none cursor-pointer">
                 <option value="">Select party / पार्टी चुनें</option>
                 {parties.map((p) => (
                   <option key={p.party_id} value={p.party_id}>{p.name}</option>
@@ -222,44 +222,44 @@ export default function NewDOPage() {
 
             {partyId === "__new__" && (
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-ink-soft">New Party Name / नई पार्टी का नाम</label>
-                <input type="text" value={partyName} onChange={(e) => setPartyName(e.target.value)} className="focus-ring h-11 w-full rounded-[11px] border border-border bg-surface-2 px-3.5 text-[14px] text-ink placeholder:text-ink-faint transition-colors" placeholder="Party name / पार्टी का नाम" />
+                <label className="mb-1.5 block text-[11px] sm:text-[12.5px] font-semibold text-ink-soft">New Party Name / नई पार्टी का नाम</label>
+                <input type="text" value={partyName} onChange={(e) => setPartyName(e.target.value)} className="focus-ring h-10 sm:h-11 w-full rounded-[9px] sm:rounded-[11px] border border-border bg-surface-2 px-3 sm:px-3.5 text-[13px] sm:text-[14px] text-ink placeholder:text-ink-faint transition-colors" placeholder="Party name / पार्टी का नाम" />
               </div>
             )}
           </div>
 
           <div>
-            <label className="mb-2 block text-[12.5px] font-semibold text-ink-soft">Direction / दिशा</label>
+            <label className="mb-2 block text-[11px] sm:text-[12.5px] font-semibold text-ink-soft">Direction / दिशा</label>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setDirection("IN")} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] text-[13px] font-semibold transition-all ${direction === "IN" ? "bg-green-600 text-white shadow-[var(--shadow-sm)]" : "bg-surface-2 text-ink-soft hover:text-ink border border-border hover:bg-white/5"}`}>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+              <button type="button" onClick={() => setDirection("IN")} className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-[9px] sm:rounded-[10px] text-[12px] sm:text-[13px] font-semibold transition-all ${direction === "IN" ? "bg-green-600 text-white shadow-[var(--shadow-sm)]" : "bg-surface-2 text-ink-soft hover:text-ink border border-border hover:bg-white/5"}`}>
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
-                IN - भीतर आना
+                IN
               </button>
-              <button type="button" onClick={() => setDirection("OUT")} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] text-[13px] font-semibold transition-all ${direction === "OUT" ? "bg-orange-600 text-white shadow-[var(--shadow-sm)]" : "bg-surface-2 text-ink-soft hover:text-ink border border-border hover:bg-white/5"}`}>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+              <button type="button" onClick={() => setDirection("OUT")} className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-[9px] sm:rounded-[10px] text-[12px] sm:text-[13px] font-semibold transition-all ${direction === "OUT" ? "bg-orange-600 text-white shadow-[var(--shadow-sm)]" : "bg-surface-2 text-ink-soft hover:text-ink border border-border hover:bg-white/5"}`}>
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
-                OUT - बाहर जाना
+                OUT
               </button>
             </div>
           </div>
         </div>
 
         {/* Items Card */}
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div>
-              <h2 className="text-[14px] font-semibold text-ink">Items / माल</h2>
-              <p className="text-[12px] text-ink-faint mt-0.5">Pick an item, add vehicle number, bags & weight. Weight is auto-calculated from bag size.</p>
-              <p className="text-[11px] text-ink-faint mt-0.5">माल चुनें, गाड़ी नंबर, बोरी और वज़न जोड़ें। वज़न बोरी के आकार से स्वतः गणना होता है।</p>
+              <h2 className="text-[13px] sm:text-[14px] font-semibold text-ink">Items / माल</h2>
+              <p className="text-[11px] sm:text-[12px] text-ink-faint mt-0.5">Pick an item, add vehicle number, bags & weight.</p>
             </div>
-            <button type="button" onClick={addItem} className="flex items-center gap-1 text-[12px] font-semibold text-brand hover:text-brand-hover transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+            <button type="button" onClick={addItem} className="flex items-center gap-1 text-[11px] sm:text-[12px] font-semibold text-brand hover:text-brand-hover transition-colors">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              + Add item / माल जोड़ें
+              <span className="hidden sm:inline">+ Add item / माल जोड़ें</span>
+              <span className="sm:hidden">+ Add</span>
             </button>
           </div>
 
@@ -277,26 +277,26 @@ export default function NewDOPage() {
               <tbody>
                 {items.map((item, index) => (
                   <tr key={index} className="border-b border-border/50 last:border-0">
-                    <td className="py-2.5 pr-3">
-                      <input type="text" value={item.vehicleNumber} onChange={(e) => updateItem(index, "vehicleNumber", e.target.value)} className="focus-ring h-9 w-full rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink placeholder:text-ink-faint transition-colors" placeholder="Vehicle No. / गाड़ी नं." />
+                    <td className="py-2 sm:py-2.5 pr-2 sm:pr-3">
+                      <input type="text" value={item.vehicleNumber} onChange={(e) => updateItem(index, "vehicleNumber", e.target.value)} className="focus-ring h-8 sm:h-9 w-full rounded-[8px] sm:rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink placeholder:text-ink-faint transition-colors" placeholder="Vehicle No." />
                     </td>
-                    <td className="py-2.5 px-3">
-                      <select value={item.itemId} onChange={(e) => updateItem(index, "itemId", e.target.value)} className="focus-ring h-9 w-full rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink transition-colors appearance-none cursor-pointer">
-                        <option value="">Select item / माल चुनें</option>
+                    <td className="py-2 sm:py-2.5 px-2 sm:px-3">
+                      <select value={item.itemId} onChange={(e) => updateItem(index, "itemId", e.target.value)} className="focus-ring h-8 sm:h-9 w-full rounded-[8px] sm:rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink transition-colors appearance-none cursor-pointer">
+                        <option value="">Select item</option>
                         {availableItems.map((ai) => (
-                          <option key={ai.item_id} value={ai.item_id}>{ai.name} ({ai.bag_size} kg/बैग)</option>
+                          <option key={ai.item_id} value={ai.item_id}>{ai.name} ({ai.bag_size}kg)</option>
                         ))}
                       </select>
                     </td>
-                    <td className="py-2.5 px-3">
-                      <input type="number" value={item.bags || ""} onChange={(e) => updateItem(index, "bags", parseInt(e.target.value) || 0)} min="0" className="focus-ring h-9 w-full rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink text-right placeholder:text-ink-faint transition-colors" placeholder="0" />
+                    <td className="py-2 sm:py-2.5 px-2 sm:px-3">
+                      <input type="number" value={item.bags || ""} onChange={(e) => updateItem(index, "bags", parseInt(e.target.value) || 0)} min="0" className="focus-ring h-8 sm:h-9 w-full rounded-[8px] sm:rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink text-right placeholder:text-ink-faint transition-colors" placeholder="0" />
                     </td>
-                    <td className="py-2.5 px-3">
-                      <input type="number" value={item.totalWeight || ""} readOnly className="focus-ring h-9 w-full rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink text-right placeholder:text-ink-faint transition-colors cursor-not-allowed opacity-70" placeholder="0" />
+                    <td className="py-2 sm:py-2.5 px-2 sm:px-3">
+                      <input type="number" value={item.totalWeight || ""} readOnly className="focus-ring h-8 sm:h-9 w-full rounded-[8px] sm:rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink text-right placeholder:text-ink-faint transition-colors cursor-not-allowed opacity-70" placeholder="0" />
                     </td>
-                    <td className="py-2.5 pl-1">
+                    <td className="py-2 sm:py-2.5 pl-1">
                       <button type="button" onClick={() => removeItem(index)} className="p-1 text-ink-faint hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" disabled={items.length <= 1}>
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
@@ -317,17 +317,17 @@ export default function NewDOPage() {
         </div>
 
         {/* Summary */}
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-6">
-          <label className="block text-[14px] font-semibold text-ink mb-2">Summary / सारांश</label>
-          <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} className="focus-ring w-full rounded-[11px] border border-border bg-surface-2 px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint transition-colors resize-none" placeholder="e.g. All items received safely. / जैसे सभी माल सुरक्षित मिला।" />
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-4 sm:p-6">
+          <label className="block text-[13px] sm:text-[14px] font-semibold text-ink mb-2">Summary / सारांश</label>
+          <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} className="focus-ring w-full rounded-[9px] sm:rounded-[11px] border border-border bg-surface-2 px-3 sm:px-3.5 py-2.5 text-[13px] sm:text-[14px] text-ink placeholder:text-ink-faint transition-colors resize-none" placeholder="e.g. All items received safely." />
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
-          <button type="submit" disabled={saving} className="focus-ring group inline-flex h-11 items-center gap-2 rounded-[11px] bg-brand text-[14px] font-semibold text-brand-ink shadow-[var(--shadow-sm)] transition-all hover:bg-brand-strong active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 px-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <button type="submit" disabled={saving} className="focus-ring group inline-flex h-11 items-center justify-center gap-2 rounded-[11px] bg-brand text-[13px] sm:text-[14px] font-semibold text-brand-ink shadow-[var(--shadow-sm)] transition-all hover:bg-brand-strong active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 px-6">
             {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Save DO / डीओ सेव करें"}
           </button>
-          <button type="button" onClick={() => router.push("/challans")} className="inline-flex h-11 items-center px-6 text-[14px] font-medium text-ink-soft hover:text-ink border border-border hover:bg-white/5 rounded-[11px] transition-colors">
+          <button type="button" onClick={() => router.push("/challans")} className="inline-flex h-11 items-center justify-center px-6 text-[13px] sm:text-[14px] font-medium text-ink-soft hover:text-ink border border-border hover:bg-white/5 rounded-[11px] transition-colors">
             Cancel / रद्द
           </button>
         </div>

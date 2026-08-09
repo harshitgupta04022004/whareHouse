@@ -33,11 +33,11 @@ export default function Navbar() {
                   <path d="M12 11v10" />
                 </svg>
               </span>
-              <div className="leading-tight">
-                <span className="font-display font-bold text-[14px] tracking-[-0.01em] text-ink block">
+              <div className="leading-tight min-w-0">
+                <span className="font-display font-bold text-[14px] tracking-[-0.01em] text-ink block truncate max-w-[120px] sm:max-w-none">
                   {user?.warehouseName ?? "Warehouse"}
                 </span>
-                <span className="text-[10px] font-medium text-ink-faint">
+                <span className="text-[10px] font-medium text-ink-faint hidden sm:block">
                   DO Records &middot; Goods &amp; Warehouse
                 </span>
               </div>
@@ -111,7 +111,7 @@ export default function Navbar() {
               )}
             </nav>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {user && (
               <>
                 <div className="hidden sm:flex items-center gap-2.5">
@@ -133,6 +133,7 @@ export default function Navbar() {
                 <button
                   onClick={signOut}
                   className="flex items-center gap-1.5 text-[12px] font-medium text-ink-faint hover:text-ink transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+                  title="Sign out / साइन आउट"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -147,17 +148,17 @@ export default function Navbar() {
                       d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                     />
                   </svg>
-                  Sign out
+                  <span className="hidden sm:inline">Sign out</span>
                 </button>
               </>
             )}
           </div>
         </div>
         {/* Mobile nav */}
-        <div className="sm:hidden flex items-center gap-0.5 pb-2">
+        <div className="sm:hidden flex items-center gap-0.5 pb-2 overflow-x-auto scrollbar-hide">
           <Link
             href="/challans"
-            className={`px-3 py-1.5 rounded-[9px] text-[13px] font-medium transition-colors ${
+            className={`shrink-0 px-3 py-1.5 rounded-[9px] text-[12px] font-medium transition-colors ${
               isActive("/challans")
                 ? "bg-white/10 text-ink"
                 : "text-ink-soft hover:text-ink hover:bg-white/5"
@@ -167,14 +168,60 @@ export default function Navbar() {
           </Link>
           <Link
             href="/items"
-            className={`px-3 py-1.5 rounded-[9px] text-[13px] font-medium transition-colors ${
+            className={`shrink-0 px-3 py-1.5 rounded-[9px] text-[12px] font-medium transition-colors ${
               isActive("/items")
                 ? "bg-white/10 text-ink"
                 : "text-ink-soft hover:text-ink hover:bg-white/5"
             }`}
           >
-            Item list
+            Items
           </Link>
+          <Link
+            href="/parties"
+            className={`shrink-0 px-3 py-1.5 rounded-[9px] text-[12px] font-medium transition-colors ${
+              isActive("/parties")
+                ? "bg-white/10 text-ink"
+                : "text-ink-soft hover:text-ink hover:bg-white/5"
+            }`}
+          >
+            Parties
+          </Link>
+          {(user?.role === "admin" || user?.role === "manager") && (
+            <Link
+              href="/dashboard"
+              className={`shrink-0 px-3 py-1.5 rounded-[9px] text-[12px] font-medium transition-colors ${
+                isActive("/dashboard")
+                  ? "bg-white/10 text-ink"
+                  : "text-ink-soft hover:text-ink hover:bg-white/5"
+              }`}
+            >
+              Dashboard
+            </Link>
+          )}
+          {user?.role === "admin" && (
+            <>
+              <Link
+                href="/users"
+                className={`shrink-0 px-3 py-1.5 rounded-[9px] text-[12px] font-medium transition-colors ${
+                  isActive("/users")
+                    ? "bg-white/10 text-ink"
+                    : "text-ink-soft hover:text-ink hover:bg-white/5"
+                }`}
+              >
+                Users
+              </Link>
+              <Link
+                href="/audit"
+                className={`shrink-0 px-3 py-1.5 rounded-[9px] text-[12px] font-medium transition-colors ${
+                  isActive("/audit")
+                    ? "bg-white/10 text-ink"
+                    : "text-ink-soft hover:text-ink hover:bg-white/5"
+                }`}
+              >
+                Audit
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

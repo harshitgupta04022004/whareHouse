@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { getSupabase } from "@/lib/supabase-browser";
+import { logLoginAudit, logLogoutAudit } from "@/lib/api-client";
 import type { Session } from "@supabase/supabase-js";
 
 export interface AppUser {
@@ -107,6 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             : error.message;
         return { error: msg };
       }
+      // Log login event to audit trail
+      logLoginAudit().catch(() => {});
       return {};
     },
     [supabase],
@@ -147,6 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // Log logout event to audit trail
+    logLogoutAudit().catch(() => {});
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

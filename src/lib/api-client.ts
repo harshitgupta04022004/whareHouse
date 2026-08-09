@@ -140,7 +140,7 @@ export async function updateParty(id: string, data: Record<string, unknown>) {
   return authedFetch(`/parties?id=${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ party_id: id, ...data }),
   });
 }
 
@@ -185,7 +185,7 @@ export async function removeUser(userId: string) {
 
 export async function listAuditLog(params: { cursor?: string; limit?: number; action?: string; entity?: string } = {}) {
   const qs = new URLSearchParams();
-  if (params.cursor) qs.set("cursor", params.cursor);
+  if (params.cursor) qs.set("offset", params.cursor);
   if (params.limit) qs.set("limit", String(params.limit));
   if (params.action) qs.set("action", params.action);
   if (params.entity) qs.set("entity", params.entity);
@@ -194,6 +194,18 @@ export async function listAuditLog(params: { cursor?: string; limit?: number; ac
 
 export async function verifyAuditIntegrity() {
   return authedFetch("/audit/integrity");
+}
+
+export async function logLoginAudit() {
+  return authedFetch("/auth/session", {
+    method: "POST",
+  });
+}
+
+export async function logLogoutAudit() {
+  return authedFetch("/auth/session", {
+    method: "DELETE",
+  });
 }
 
 // ─── Files ────────────────────────────────────────────────────────

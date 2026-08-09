@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { listParties, createParty, deleteParty } from "@/lib/api-client";
+import { listParties, createParty, updateParty, deleteParty } from "@/lib/api-client";
 
 interface Party {
   party_id: string;
@@ -18,6 +18,8 @@ export default function PartiesPage() {
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -64,6 +66,31 @@ export default function PartiesPage() {
     }
   };
 
+  const handleEdit = (party: Party) => {
+    setEditingId(party.party_id);
+    setEditName(party.name);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditName("");
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    const name = editName.trim();
+    if (!name) return;
+    try {
+      await updateParty(id, { name });
+      setParties((prev) =>
+        prev.map((p) => (p.party_id === id ? { ...p, name } : p))
+      );
+      setEditingId(null);
+      setEditName("");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update party");
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-[12px] text-ink-faint mb-6">
@@ -74,16 +101,16 @@ export default function PartiesPage() {
         <span className="text-ink-soft">Parties</span>
       </div>
 
-      <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
-        Parties <span className="text-[18px] text-ink-soft font-normal">/ पार्टी</span>
+      <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
+        Parties <span className="text-[16px] sm:text-[18px] text-ink-soft font-normal">/ पार्टी</span>
       </h1>
-      <p className="text-[14px] text-ink-soft mb-2">
+      <p className="text-[12px] sm:text-[14px] text-ink-soft mb-2">
         Manage trading parties — buyers, suppliers and transporters.
       </p>
-      <p className="text-[13px] text-ink-faint mb-1">
+      <p className="text-[11px] sm:text-[13px] text-ink-faint mb-1">
         खरीदार, आपूर्तिकर्ता और ट्रांसपोर्टर की पार्टी प्रबंधित करें।
       </p>
-      <p className="text-[12px] text-ink-faint mb-8">
+      <p className="text-[11px] sm:text-[12px] text-ink-faint mb-6 sm:mb-8">
         These appear in the DO form when selecting a party.
       </p>
 
@@ -154,18 +181,57 @@ export default function PartiesPage() {
               parties.map((party) => (
                 <div
                   key={party.party_id}
-                  className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors group"
+                  className="px-5 py-3 hover:bg-white/[0.02] transition-colors"
                 >
-                  <span className="text-[14px] text-ink font-medium">{party.name}</span>
-                  <button
-                    onClick={() => handleDelete(party.party_id)}
-                    className="p-1 text-ink-faint hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                    title="Remove party"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  {editingId === party.party_id ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSaveEdit(party.party_id)}
+                        autoFocus
+                        className="focus-ring flex-1 h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink placeholder:text-ink-faint transition-colors"
+                        placeholder="Party name / पार्टी का नाम"
+                      />
+                      <button
+                        onClick={() => handleSaveEdit(party.party_id)}
+                        className="h-9 px-3 bg-brand hover:bg-brand-strong text-brand-ink text-[12px] font-semibold rounded-[9px] shadow-[var(--shadow-sm)] transition-all"
+                      >
+                        Save / सेव
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="h-9 px-3 text-[12px] font-medium text-ink-faint hover:text-ink transition-colors"
+                      >
+                        Cancel / रद्द
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between group">
+                      <span className="text-[14px] text-ink font-medium">{party.name}</span>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEdit(party)}
+                          className="p-1 text-ink-faint hover:text-brand hover:bg-brand/10 rounded-lg transition-colors"
+                          title="Edit party / पार्टी संपादित करें"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(party.party_id)}
+                          className="p-1 text-ink-faint hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Remove party / पार्टी हटाएं"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}

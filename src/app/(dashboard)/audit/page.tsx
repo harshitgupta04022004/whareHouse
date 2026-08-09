@@ -97,19 +97,19 @@ export default function AuditPage() {
         <span className="text-ink-soft">Audit Log</span>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
+          <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
             Audit Log
           </h1>
-          <p className="text-[14px] text-ink-soft">
-            Append-only trail of all actions. Hash chain ensures tamper detection.
+          <p className="text-[12px] sm:text-[14px] text-ink-soft">
+            Append-only trail of all actions.
           </p>
         </div>
         <button
           onClick={handleVerify}
           disabled={verifying}
-          className="inline-flex h-9 items-center gap-2 px-4 text-[13px] font-semibold border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors disabled:opacity-60"
+          className="inline-flex h-9 items-center gap-2 px-3 sm:px-4 text-[12px] sm:text-[13px] font-semibold border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors disabled:opacity-60"
         >
           {verifying ? (
             <div className="w-3.5 h-3.5 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />

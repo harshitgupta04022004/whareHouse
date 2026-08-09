@@ -112,25 +112,25 @@ export default function DOsPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink">
+          <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink">
             DO Records
           </h1>
-          <p className="text-[14px] text-ink-soft mt-1">
+          <p className="text-[12px] sm:text-[14px] text-ink-soft mt-1">
             Your deliveries &mdash; In &amp; Out, bags, weight and totals.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/items"
-            className="inline-flex h-9 items-center px-4 text-[13px] font-medium border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors"
+            className="inline-flex h-9 items-center px-3 sm:px-4 text-[12px] sm:text-[13px] font-medium border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors"
           >
-            Item list
+            Items
           </Link>
           <Link
             href="/challans/new"
-            className="inline-flex h-9 items-center gap-1.5 px-4 text-[13px] font-semibold bg-brand hover:bg-brand-strong text-brand-ink rounded-[10px] shadow-[var(--shadow-sm)] transition-all active:scale-[0.98]"
+            className="inline-flex h-9 items-center gap-1.5 px-3 sm:px-4 text-[12px] sm:text-[13px] font-semibold bg-brand hover:bg-brand-strong text-brand-ink rounded-[10px] shadow-[var(--shadow-sm)] transition-all active:scale-[0.98]"
           >
             <svg
               className="w-4 h-4"
@@ -151,7 +151,7 @@ export default function DOsPage() {
       </div>
 
       {/* Date Filter */}
-      <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5 mb-6">
+      <div className="rounded-[var(--radius-card)] border border-border bg-surface p-3 sm:p-5 mb-4 sm:mb-6">
         <div className="flex items-center gap-2 mb-4">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -177,8 +177,8 @@ export default function DOsPage() {
           )}
         </div>
         {showFilters && (
-          <div className="flex flex-wrap items-end gap-3">
-            <div>
+          <div className="flex flex-wrap items-end gap-2 sm:gap-3">
+            <div className="flex-1 min-w-[120px] sm:flex-none">
               <label className="block text-[11px] font-medium text-ink-faint mb-1">
                 From
               </label>
@@ -186,10 +186,10 @@ export default function DOsPage() {
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink focus:outline-none"
+                className="focus-ring h-9 w-full rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink focus:outline-none"
               />
             </div>
-            <div>
+            <div className="flex-1 min-w-[120px] sm:flex-none">
               <label className="block text-[11px] font-medium text-ink-faint mb-1">
                 To
               </label>
@@ -197,12 +197,12 @@ export default function DOsPage() {
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink focus:outline-none"
+                className="focus-ring h-9 w-full rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink focus:outline-none"
               />
             </div>
             <button
               onClick={handleApply}
-              className="inline-flex h-9 items-center gap-1.5 bg-brand hover:bg-brand-strong text-brand-ink px-4 rounded-[9px] text-[13px] font-semibold shadow-[var(--shadow-sm)] transition-all active:scale-[0.98]"
+              className="inline-flex h-9 items-center gap-1.5 bg-brand hover:bg-brand-strong text-brand-ink px-3 sm:px-4 rounded-[9px] text-[12px] sm:text-[13px] font-semibold shadow-[var(--shadow-sm)] transition-all active:scale-[0.98]"
             >
               <svg
                 className="w-3.5 h-3.5"
@@ -221,14 +221,14 @@ export default function DOsPage() {
             </button>
             <button
               onClick={handleToday}
-              className="h-9 px-4 text-[13px] font-medium text-ink-soft hover:text-ink hover:bg-white/5 rounded-[9px] transition-colors"
+              className="h-9 px-3 sm:px-4 text-[12px] sm:text-[13px] font-medium text-ink-soft hover:text-ink hover:bg-white/5 rounded-[9px] transition-colors"
             >
               Today
             </button>
             {from && to && (
               <button
                 onClick={handleClear}
-                className="h-9 px-4 text-[13px] font-medium text-ink-soft hover:text-ink hover:bg-white/5 rounded-[9px] transition-colors"
+                className="h-9 px-3 sm:px-4 text-[12px] sm:text-[13px] font-medium text-ink-soft hover:text-ink hover:bg-white/5 rounded-[9px] transition-colors"
               >
                 Clear
               </button>
@@ -238,14 +238,14 @@ export default function DOsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-3 sm:p-5">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <span className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
               Total DOs
             </span>
             <svg
-              className="w-4 h-4 text-ink-faint"
+              className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-ink-faint"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -258,19 +258,19 @@ export default function DOsPage() {
               />
             </svg>
           </div>
-          <div className="font-display text-[28px] font-bold text-ink leading-none">
+          <div className="font-display text-[20px] sm:text-[28px] font-bold text-ink leading-none">
             {stats.doCount}
           </div>
-          <div className="text-[11px] text-ink-faint mt-1.5">in selected period</div>
+          <div className="text-[9px] sm:text-[11px] text-ink-faint mt-1">in selected period</div>
         </div>
 
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-              Total Bags + बोरी
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-3 sm:p-5">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <span className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              Bags + बोरी
             </span>
             <svg
-              className="w-4 h-4 text-ink-faint"
+              className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-ink-faint"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -283,21 +283,19 @@ export default function DOsPage() {
               />
             </svg>
           </div>
-          <div className="font-display text-[28px] font-bold text-ink leading-none">
+          <div className="font-display text-[20px] sm:text-[28px] font-bold text-ink leading-none">
             {stats.bags}
           </div>
-          <div className="text-[11px] text-ink-faint mt-1.5">
-            all vehicles combined
-          </div>
+          <div className="text-[9px] sm:text-[11px] text-ink-faint mt-1">all vehicles</div>
         </div>
 
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-              Total Weight
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-3 sm:p-5">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <span className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              Weight
             </span>
             <svg
-              className="w-4 h-4 text-ink-faint"
+              className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-ink-faint"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -310,12 +308,10 @@ export default function DOsPage() {
               />
             </svg>
           </div>
-          <div className="font-display text-[28px] font-bold text-ink leading-none">
+          <div className="font-display text-[20px] sm:text-[28px] font-bold text-ink leading-none">
             {formatWeight(stats.weight)}
           </div>
-          <div className="text-[11px] text-ink-faint mt-1.5">
-            all vehicles combined
-          </div>
+          <div className="text-[9px] sm:text-[11px] text-ink-faint mt-1">all vehicles</div>
         </div>
       </div>
 
@@ -359,11 +355,11 @@ export default function DOsPage() {
             return (
               <div
                 key={DO.do_id}
-                className="rounded-[var(--radius-card)] border border-border bg-surface p-5 hover:border-brand/30 transition-colors group"
+                className="rounded-[var(--radius-card)] border border-border bg-surface p-4 sm:p-5 hover:border-brand/30 transition-colors group"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-1.5">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${
                           DO.direction === "IN"
@@ -371,18 +367,16 @@ export default function DOsPage() {
                             : "bg-orange-500/15 text-orange-400"
                         }`}
                       >
-                        {DO.direction === "IN"
-                          ? "IN — भीतर आना"
-                          : "OUT — बाहर जाना"}
+                        {DO.direction === "IN" ? "IN" : "OUT"}
                       </span>
-                      <span className="text-[12px] text-ink-faint">
+                      <span className="text-[11px] sm:text-[12px] text-ink-faint">
                         {formatDate(DO.date)}
                       </span>
                     </div>
-                    <h3 className="font-display font-semibold text-[14px] text-ink truncate">
+                    <h3 className="font-display font-semibold text-[13px] sm:text-[14px] text-ink truncate">
                       {DO.parties?.name || DO.do_number || "Unnamed DO"}
                     </h3>
-                    <div className="flex items-center gap-4 mt-1.5 text-[12px] text-ink-faint">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[11px] sm:text-[12px] text-ink-faint">
                       <span>
                         DO: <span className="text-ink-soft">{DO.do_number || "N/A"}</span>
                       </span>
@@ -393,7 +387,7 @@ export default function DOsPage() {
                       )}
                     </div>
                     {DO.item_count > 0 && (
-                      <div className="flex items-center gap-4 mt-2 text-[12px] text-ink-faint">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5 text-[11px] sm:text-[12px] text-ink-faint">
                         <span>Items: <span className="text-ink-soft">{DO.item_count}</span></span>
                         <span>Bags: <span className="text-ink-soft">{totalBags}</span></span>
                         <span>Weight: <span className="text-ink-soft">{formatWeight(totalWeight)}</span></span>

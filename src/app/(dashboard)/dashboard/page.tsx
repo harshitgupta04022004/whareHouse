@@ -107,21 +107,21 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-4">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink">
-            Inventory Dashboard <span className="text-[18px] text-ink-soft font-normal">/ इन्वेंटरी डैशबोर्ड</span>
+          <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink">
+            Inventory Dashboard <span className="text-[16px] sm:text-[18px] text-ink-soft font-normal">/ इन्वेंटरी डैशबोर्ड</span>
           </h1>
-          <p className="text-[14px] text-ink-soft mt-1">
+          <p className="text-[12px] sm:text-[14px] text-ink-soft mt-1">
             IN/OUT movement matrix by product for the selected period.
           </p>
-          <p className="text-[13px] text-ink-faint mt-1">
+          <p className="text-[11px] sm:text-[13px] text-ink-faint mt-1">
             चयनित अवधि के लिए उत्पाद अनुसार IN/OUT आवाजाही मैट्रिक्स।
           </p>
         </div>
         <button
           onClick={exportCSV}
-          className="inline-flex h-9 items-center gap-1.5 px-4 text-[13px] font-medium border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors print:hidden"
+          className="inline-flex h-9 items-center gap-1.5 px-3 sm:px-4 text-[12px] sm:text-[13px] font-medium border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors print:hidden"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -131,48 +131,48 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Date Range */}
-      <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5 mb-6 print:hidden">
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
+      <div className="rounded-[var(--radius-card)] border border-border bg-surface p-3 sm:p-5 mb-4 sm:mb-6 print:hidden">
+        <div className="flex flex-wrap items-end gap-2 sm:gap-3">
+          <div className="flex-1 min-w-[120px] sm:flex-none">
             <label className="block text-[11px] font-medium text-ink-faint mb-1">From / से</label>
-            <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPreset(""); }} className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink" />
+            <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPreset(""); }} className="focus-ring h-9 w-full rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink" />
           </div>
-          <div>
+          <div className="flex-1 min-w-[120px] sm:flex-none">
             <label className="block text-[11px] font-medium text-ink-faint mb-1">To / तक</label>
-            <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPreset(""); }} className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink" />
+            <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPreset(""); }} className="focus-ring h-9 w-full rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink" />
           </div>
           {["7d", "30d", "mtd"].map((p) => (
             <button
               key={p}
               onClick={() => applyPreset(p)}
-              className={`h-9 px-3 text-[12px] font-medium rounded-[9px] transition-colors ${
+              className={`h-9 px-2 sm:px-3 text-[11px] sm:text-[12px] font-medium rounded-[9px] transition-colors ${
                 preset === p ? "bg-brand text-brand-ink" : "text-ink-soft hover:text-ink hover:bg-white/5"
               }`}
             >
-              {p === "7d" ? "7 Days / 7 दिन" : p === "30d" ? "30 Days / 30 दिन" : "Month to Date / महीने से आज"}
+              {p === "7d" ? "7D" : p === "30d" ? "30D" : "MTD"}
             </button>
           ))}
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total IN / कुल आना</div>
-          <div className="font-display text-[28px] font-bold text-green-400 leading-none">{totals.totalInBags.toLocaleString()}</div>
-          <div className="text-[11px] text-ink-faint mt-1.5">bags in period / अवधि में बोरी</div>
-          <div className="text-[13px] text-green-400/80 mt-1">{totals.totalInKg.toLocaleString()} kg</div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-3 sm:p-5">
+          <div className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-1 sm:mb-2">IN / आना</div>
+          <div className="font-display text-[18px] sm:text-[28px] font-bold text-green-400 leading-none">{totals.totalInBags.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[11px] text-ink-faint mt-1">bags / बोरी</div>
+          <div className="text-[11px] sm:text-[13px] text-green-400/80 mt-0.5 sm:mt-1">{totals.totalInKg.toLocaleString()} kg</div>
         </div>
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total OUT / कुल जाना</div>
-          <div className="font-display text-[28px] font-bold text-orange-400 leading-none">{totals.totalOutBags.toLocaleString()}</div>
-          <div className="text-[11px] text-ink-faint mt-1.5">bags in period / अवधि में बोरी</div>
-          <div className="text-[13px] text-orange-400/80 mt-1">{totals.totalOutKg.toLocaleString()} kg</div>
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-3 sm:p-5">
+          <div className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-1 sm:mb-2">OUT / जाना</div>
+          <div className="font-display text-[18px] sm:text-[28px] font-bold text-orange-400 leading-none">{totals.totalOutBags.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[11px] text-ink-faint mt-1">bags / बोरी</div>
+          <div className="text-[11px] sm:text-[13px] text-orange-400/80 mt-0.5 sm:mt-1">{totals.totalOutKg.toLocaleString()} kg</div>
         </div>
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total Remaining / कुल शेष</div>
-          <div className="font-display text-[28px] font-bold text-ink leading-none">{totals.totalRemaining.toLocaleString()}</div>
-          <div className="text-[11px] text-ink-faint mt-1.5">kg remaining all time / सदैव शेष kg</div>
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-3 sm:p-5">
+          <div className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-1 sm:mb-2">Remaining / शेष</div>
+          <div className="font-display text-[18px] sm:text-[28px] font-bold text-ink leading-none">{totals.totalRemaining.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[11px] text-ink-faint mt-1">kg all time</div>
         </div>
       </div>
 

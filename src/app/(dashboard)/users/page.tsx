@@ -99,13 +99,13 @@ export default function UsersPage() {
         <span className="text-ink-soft">Users</span>
       </div>
 
-      <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
+      <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
         User Management
       </h1>
-      <p className="text-[14px] text-ink-soft mb-2">
+      <p className="text-[12px] sm:text-[14px] text-ink-soft mb-2">
         Invite team members and manage roles.
       </p>
-      <p className="text-[12px] text-ink-faint mb-8">
+      <p className="text-[11px] sm:text-[12px] text-ink-faint mb-6 sm:mb-8">
         Roles control what each user can do: staff can create DOs, managers can edit, admins manage users.
       </p>
 
@@ -132,31 +132,31 @@ export default function UsersPage() {
         )}
 
         {showInvite && (
-          <div className="px-5 py-3 bg-white/[0.02] border-b border-border space-y-2">
+          <div className="px-4 sm:px-5 py-3 bg-white/[0.02] border-b border-border space-y-2">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-[12px] px-3 py-1.5 rounded-lg">
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] sm:text-[12px] px-3 py-1.5 rounded-lg">
                 {error}
               </div>
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="text"
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
-                className="focus-ring flex-1 h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink placeholder:text-ink-faint transition-colors"
+                className="focus-ring flex-1 min-w-[100px] h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[12px] sm:text-[13px] text-ink placeholder:text-ink-faint transition-colors"
                 placeholder="Name"
               />
               <input
                 type="email"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                className="focus-ring flex-1 h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink placeholder:text-ink-faint transition-colors"
+                className="focus-ring flex-1 min-w-[100px] h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[12px] sm:text-[13px] text-ink placeholder:text-ink-faint transition-colors"
                 placeholder="Email"
               />
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink transition-colors"
+                className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink transition-colors"
               >
                 <option value="staff">Staff</option>
                 <option value="manager">Manager</option>

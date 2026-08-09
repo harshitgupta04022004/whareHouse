@@ -112,16 +112,16 @@ export default function ItemsPage() {
         <span className="text-ink-soft">Item list</span>
       </div>
 
-      <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
-        Item List <span className="text-[18px] text-ink-soft font-normal">/ माल सूची</span>
+      <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
+        Item List <span className="text-[16px] sm:text-[18px] text-ink-soft font-normal">/ माल सूची</span>
       </h1>
-      <p className="text-[14px] text-ink-soft mb-2">
+      <p className="text-[12px] sm:text-[14px] text-ink-soft mb-2">
         Add or remove the items that appear in the DO drop-down — Wheat, Sugar, fruits, or anything new.
       </p>
-      <p className="text-[13px] text-ink-faint mb-1">
+      <p className="text-[11px] sm:text-[13px] text-ink-faint mb-1">
         DO में दिखने वाले माल को जोड़ें या हटाएं — गेहूं, चीनी, फल, या कुछ भी नया।
       </p>
-      <p className="text-[12px] text-ink-faint mb-8">
+      <p className="text-[11px] sm:text-[12px] text-ink-faint mb-6 sm:mb-8">
         These are the items you can pick when creating a DO. Need a new one? Ask an admin to add it.
       </p>
 
@@ -142,15 +142,15 @@ export default function ItemsPage() {
         </div>
 
         {showAdd && (
-          <div className="px-5 py-3 bg-white/[0.02] border-b border-border space-y-2">
-            <div className="flex items-center gap-2">
+          <div className="px-4 sm:px-5 py-3 bg-white/[0.02] border-b border-border space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="text"
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !isDuplicate && handleAdd()}
                 autoFocus
-                className={`focus-ring flex-1 h-9 rounded-[9px] border px-3 text-[13px] text-ink placeholder:text-ink-faint transition-colors bg-surface-2 ${
+                className={`focus-ring flex-1 min-w-[120px] h-9 rounded-[9px] border px-3 text-[12px] sm:text-[13px] text-ink placeholder:text-ink-faint transition-colors bg-surface-2 ${
                   isDuplicate ? "border-red-500/50" : "border-border"
                 }`}
                 placeholder="Item name / माल का नाम"
@@ -160,8 +160,8 @@ export default function ItemsPage() {
                 value={newItemBagSize}
                 onChange={(e) => setNewItemBagSize(Number(e.target.value))}
                 min={1}
-                className="focus-ring w-20 h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink text-center transition-colors"
-                placeholder="Bag / बोरी"
+                className="focus-ring w-16 sm:w-20 h-9 rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink text-center transition-colors"
+                placeholder="Bag"
               />
               <button
                 onClick={handleAdd}
@@ -174,11 +174,11 @@ export default function ItemsPage() {
                 onClick={() => { setShowAdd(false); setNewItemName(""); }}
                 className="h-9 px-3 text-[12px] font-medium text-ink-faint hover:text-ink transition-colors"
               >
-                Cancel / रद्द
+                Cancel
               </button>
             </div>
             {isDuplicate && (
-              <p className="text-[12px] text-red-400">
+              <p className="text-[11px] sm:text-[12px] text-red-400">
                 An item with this name already exists. / इस नाम का माल पहले से मौजूद है।
               </p>
             )}
@@ -203,14 +203,14 @@ export default function ItemsPage() {
                   className="px-5 py-3 hover:bg-white/[0.02] transition-colors"
                 >
                   {editingId === item.item_id ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <input
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
                         autoFocus
-                        className="focus-ring flex-1 h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink placeholder:text-ink-faint transition-colors"
+                        className="focus-ring flex-1 min-w-[120px] h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[12px] sm:text-[13px] text-ink placeholder:text-ink-faint transition-colors"
                         placeholder="Item name / माल का नाम"
                       />
                       <input
@@ -218,8 +218,8 @@ export default function ItemsPage() {
                         value={editBagSize}
                         onChange={(e) => setEditBagSize(Number(e.target.value))}
                         min={1}
-                        className="focus-ring w-20 h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink text-center transition-colors"
-                        placeholder="Bag / बोरी"
+                        className="focus-ring w-16 sm:w-20 h-9 rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink text-center transition-colors"
+                        placeholder="Bag"
                       />
                       <button
                         onClick={handleSaveEdit}
@@ -232,7 +232,7 @@ export default function ItemsPage() {
                         onClick={handleCancelEdit}
                         className="h-9 px-3 text-[12px] font-medium text-ink-faint hover:text-ink transition-colors"
                       >
-                        Cancel / रद्द
+                        Cancel
                       </button>
                     </div>
                   ) : (

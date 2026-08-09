@@ -34,6 +34,12 @@ export default function RootLayout({
       className={`${inter.variable} ${sora.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* Inline script: runs before React hydration to catch recovery/invite tokens */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var h=window.location.hash;if(h.indexOf('type=recovery')!==-1||h.indexOf('type=invite')!==-1){if(!sessionStorage.getItem('resetRedirect')){sessionStorage.setItem('resetRedirect','1');window.location.replace('/reset-password'+h);}}}catch(e){}})();`,
+          }}
+        />
         <ErrorBoundary>
           <AuthProvider>
             <ToastProvider>{children}</ToastProvider>

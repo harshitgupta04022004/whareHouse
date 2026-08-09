@@ -107,7 +107,7 @@ export async function GET(request: Request) {
         user_id,
         parties(name),
         app_users(name),
-        do_items(bags, total_weight)
+        do_items(bags, total_weight, vehicle_number, item_id)
       `)
       .eq("warehouse_id", user.warehouseId)
       .gte("date", startDate)
@@ -121,11 +121,39 @@ export async function GET(request: Request) {
     const staffVolume = new Map<string, { name: string; dos: number; bags: number }>();
     const dailyMap = new Map<string, { date: string; in_dos: number; out_dos: number; in_bags: number; out_bags: number }>();
 
+    type VehicleDoAgg = {
+      do_id: string;
+      do_number: string;
+      direction: string;
+      date: string;
+      party: string;
+      item_count: number;
+      bags: number;
+      total_weight: number;
+    };
+    type VehicleAgg = {
+      vehicle_number: string;
+      do_count: number;
+      item_count: number;
+      bags: number;
+      total_weight: number;
+      in_bags: number;
+      out_bags: number;
+      in_weight: number;
+      out_weight: number;
+      dos: Map<string, VehicleDoAgg>;
+    };
+    const vehicleVolume = new Map<string, VehicleAgg>();
+
     for (const d of doList) {
-      const bags = ((d.do_items as Array<{ bags: number; total_weight: number }> | null) ?? [])
-        .reduce((s, i) => s + (i.bags ?? 0), 0);
-      const weight = ((d.do_items as Array<{ bags: number; total_weight: number }> | null) ?? [])
-        .reduce((s, i) => s + Number(i.total_weight ?? 0), 0);
+      const items = (d.do_items as Array<{
+        bags: number;
+        total_weight: number;
+        vehicle_number?: string | null;
+        item_id?: string;
+      }> | null) ?? [];
+      const bags = items.reduce((s, i) => s + (i.bags ?? 0), 0);
+      const weight = items.reduce((s, i) => s + Number(i.total_weight ?? 0), 0);
 
       if (d.direction === "IN") inDoCount += 1;
       else outDoCount += 1;
@@ -168,7 +196,92 @@ export async function GET(request: Request) {
       staff.dos += 1;
       staff.bags += bags;
       staffVolume.set(d.user_id, staff);
+
+      // Group line items by vehicle within this DO
+      const byVehicle = new Map<string, { bags: number; weight: number; item_count: number }>();
+      for (const item of items) {
+        const raw = item.vehicle_number?.trim() ?? "";
+        const vehicleKey = raw ? raw.toUpperCase() : "__none__";
+        const current = byVehicle.get(vehicleKey) ?? { bags: 0, weight: 0, item_count: 0 };
+        current.bags += item.bags ?? 0;
+        current.weight += Number(item.total_weight ?? 0);
+        current.item_count += 1;
+        byVehicle.set(vehicleKey, current);
+      }
+
+      for (const [vehicleKey, line] of byVehicle) {
+        const displayName =
+          vehicleKey === "__none__" ? "No vehicle / बिना गाड़ी" : vehicleKey;
+        const vehicle = vehicleVolume.get(vehicleKey) ?? {
+          vehicle_number: displayName,
+          do_count: 0,
+          item_count: 0,
+          bags: 0,
+          total_weight: 0,
+          in_bags: 0,
+          out_bags: 0,
+          in_weight: 0,
+          out_weight: 0,
+          dos: new Map<string, VehicleDoAgg>(),
+        };
+
+        vehicle.item_count += line.item_count;
+        vehicle.bags += line.bags;
+        vehicle.total_weight += line.weight;
+        if (d.direction === "IN") {
+          vehicle.in_bags += line.bags;
+          vehicle.in_weight += line.weight;
+        } else {
+          vehicle.out_bags += line.bags;
+          vehicle.out_weight += line.weight;
+        }
+
+        const existingDo = vehicle.dos.get(d.do_id);
+        if (existingDo) {
+          existingDo.item_count += line.item_count;
+          existingDo.bags += line.bags;
+          existingDo.total_weight += line.weight;
+        } else {
+          vehicle.dos.set(d.do_id, {
+            do_id: d.do_id,
+            do_number: d.do_number,
+            direction: d.direction,
+            date: d.date,
+            party: partyName,
+            item_count: line.item_count,
+            bags: line.bags,
+            total_weight: line.weight,
+          });
+          vehicle.do_count += 1;
+        }
+
+        vehicleVolume.set(vehicleKey, vehicle);
+      }
     }
+
+    const vehicles = [...vehicleVolume.values()]
+      .map((v) => ({
+        vehicle_number: v.vehicle_number,
+        do_count: v.do_count,
+        item_count: v.item_count,
+        bags: v.bags,
+        total_weight: Math.round(v.total_weight * 100) / 100,
+        in_bags: v.in_bags,
+        out_bags: v.out_bags,
+        in_weight: Math.round(v.in_weight * 100) / 100,
+        out_weight: Math.round(v.out_weight * 100) / 100,
+        dos: [...v.dos.values()]
+          .map((row) => ({
+            ...row,
+            total_weight: Math.round(row.total_weight * 100) / 100,
+          }))
+          .sort((a, b) => b.date.localeCompare(a.date) || a.do_number.localeCompare(b.do_number)),
+      }))
+      .sort((a, b) => {
+        if (a.vehicle_number.startsWith("No vehicle")) return 1;
+        if (b.vehicle_number.startsWith("No vehicle")) return -1;
+        return b.do_count - a.do_count || b.bags - a.bags || a.vehicle_number.localeCompare(b.vehicle_number);
+      });
 
     const topParties = [...partyVolume.values()]
       .sort((a, b) => b.bags - a.bags)
@@ -259,6 +372,7 @@ export async function GET(request: Request) {
         total_bags: r.in_bags + r.out_bags,
       })),
       daily_trend: dailyTrend,
+      vehicles,
       recent_dos: doList.slice(0, 8).map((d) => ({
         do_id: d.do_id,
         do_number: d.do_number,

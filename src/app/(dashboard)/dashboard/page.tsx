@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { getDashboard } from "@/lib/api-client";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatWeight } from "@/lib/utils";
 import ExportMenu from "@/components/ExportMenu";
 
 interface ProductRow {
@@ -17,6 +18,30 @@ interface ProductRow {
   out_kg: number;
   remaining: number;
   remaining_bags: number;
+}
+
+interface VehicleDoRow {
+  do_id: string;
+  do_number: string;
+  direction: string;
+  date: string;
+  party: string;
+  item_count: number;
+  bags: number;
+  total_weight: number;
+}
+
+interface VehicleRow {
+  vehicle_number: string;
+  do_count: number;
+  item_count: number;
+  bags: number;
+  total_weight: number;
+  in_bags: number;
+  out_bags: number;
+  in_weight: number;
+  out_weight: number;
+  dos: VehicleDoRow[];
 }
 
 interface Insights {
@@ -59,6 +84,7 @@ interface Insights {
     in_bags: number;
     out_bags: number;
   }>;
+  vehicles: VehicleRow[];
   recent_dos: Array<{
     do_id: string;
     do_number: string;
@@ -85,6 +111,8 @@ export default function AdminDashboardPage() {
   const [from, setFrom] = useState(defaultFrom);
   const [to, setTo] = useState(defaultTo);
   const [preset, setPreset] = useState("30d");
+  const [expandedVehicles, setExpandedVehicles] = useState<Set<string>>(new Set());
+  const [vehicleSearch, setVehicleSearch] = useState("");
 
   useEffect(() => {
     if (!user || (user.role !== "admin" && user.role !== "manager")) {
@@ -102,6 +130,7 @@ export default function AdminDashboardPage() {
       const result = await getDashboard(from, to);
       setRows(result.data ?? []);
       setInsights(result.insights ?? null);
+      setExpandedVehicles(new Set());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
     } finally {
@@ -123,6 +152,9 @@ export default function AdminDashboardPage() {
         break;
       case "mtd":
         fromStr = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-01`;
+        break;
+      case "ytd":
+        fromStr = `${t.getFullYear()}-01-01`;
         break;
       default:
         fromStr = defaultFrom;
@@ -174,6 +206,30 @@ export default function AdminDashboardPage() {
       ...insights.daily_trend.map((d) => d.in_bags + d.out_bags),
     );
   }, [insights]);
+
+  const vehicleRows = useMemo(() => {
+    const list = insights?.vehicles ?? [];
+    const q = vehicleSearch.trim().toUpperCase();
+    if (!q) return list;
+    return list.filter(
+      (v) =>
+        v.vehicle_number.toUpperCase().includes(q) ||
+        v.dos.some(
+          (d) =>
+            d.do_number.toUpperCase().includes(q) ||
+            d.party.toUpperCase().includes(q),
+        ),
+    );
+  }, [insights, vehicleSearch]);
+
+  const toggleVehicle = (vehicleNumber: string) => {
+    setExpandedVehicles((prev) => {
+      const next = new Set(prev);
+      if (next.has(vehicleNumber)) next.delete(vehicleNumber);
+      else next.add(vehicleNumber);
+      return next;
+    });
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-4">
@@ -239,7 +295,7 @@ export default function AdminDashboardPage() {
               className="focus-ring h-9 w-full rounded-[9px] border border-border bg-surface-2 px-2 sm:px-3 text-[12px] sm:text-[13px] text-ink"
             />
           </div>
-          {["7d", "30d", "mtd"].map((p) => (
+          {["7d", "30d", "mtd", "ytd"].map((p) => (
             <button
               key={p}
               onClick={() => applyPreset(p)}
@@ -247,7 +303,7 @@ export default function AdminDashboardPage() {
                 preset === p ? "bg-brand text-brand-ink" : "text-ink-soft hover:text-ink hover:bg-white/5"
               }`}
             >
-              {p === "7d" ? "7D" : p === "30d" ? "30D" : "MTD"}
+              {p === "7d" ? "7D" : p === "30d" ? "30D" : p === "mtd" ? "MTD" : "YTD"}
             </button>
           ))}
         </div>
@@ -420,6 +476,206 @@ export default function AdminDashboardPage() {
               </tfoot>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Vehicle ledger — multi-DO per vehicle */}
+      {insights && !loading && (
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-2">
+            <div>
+              <h2 className="text-[13px] font-semibold text-ink">
+                Vehicle ledger / गाड़ी लेजर
+              </h2>
+              <p className="text-[11px] text-ink-faint">
+                One vehicle can have many DOs in the selected period. Expand a row to open each DO.
+              </p>
+            </div>
+            <input
+              type="search"
+              value={vehicleSearch}
+              onChange={(e) => setVehicleSearch(e.target.value)}
+              placeholder="Search vehicle / DO / party"
+              className="focus-ring h-9 w-full sm:w-64 rounded-[9px] border border-border bg-surface px-3 text-[12px] text-ink placeholder:text-ink-faint"
+            />
+          </div>
+
+          {vehicleRows.length === 0 ? (
+            <div className="rounded-[var(--radius-card)] border border-border bg-surface p-8 text-center">
+              <p className="text-[13px] text-ink-faint">
+                No vehicle movements in this period. / इस अवधि में कोई गाड़ी आवाजाही नहीं।
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px]">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                        Vehicle No. / गाड़ी नं.
+                      </th>
+                      <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                        DOs
+                      </th>
+                      <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                        Items
+                      </th>
+                      <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                        Bags
+                      </th>
+                      <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                        Weight
+                      </th>
+                      <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">
+                        IN
+                      </th>
+                      <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">
+                        OUT
+                      </th>
+                      <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                        Details
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vehicleRows.map((vehicle) => {
+                      const open = expandedVehicles.has(vehicle.vehicle_number);
+                      return (
+                        <Fragment key={vehicle.vehicle_number}>
+                          <tr className="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
+                            <td className="px-4 py-3 text-[13px] font-semibold text-ink">
+                              <button
+                                type="button"
+                                onClick={() => toggleVehicle(vehicle.vehicle_number)}
+                                className="inline-flex items-center gap-2 text-left hover:text-brand transition-colors"
+                              >
+                                <span className="text-ink-faint text-[11px] w-3">
+                                  {open ? "▾" : "▸"}
+                                </span>
+                                {vehicle.vehicle_number}
+                              </button>
+                            </td>
+                            <td className="px-4 py-3 text-[13px] text-ink-soft text-right">
+                              {vehicle.do_count}
+                            </td>
+                            <td className="px-4 py-3 text-[13px] text-ink-soft text-right">
+                              {vehicle.item_count}
+                            </td>
+                            <td className="px-4 py-3 text-[13px] text-ink text-right font-medium">
+                              {vehicle.bags.toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-[13px] text-ink-soft text-right">
+                              {formatWeight(vehicle.total_weight)}
+                            </td>
+                            <td className="px-4 py-3 text-[12px] text-green-400 text-right">
+                              {vehicle.in_bags.toLocaleString()} / {formatWeight(vehicle.in_weight)}
+                            </td>
+                            <td className="px-4 py-3 text-[12px] text-orange-400 text-right">
+                              {vehicle.out_bags.toLocaleString()} / {formatWeight(vehicle.out_weight)}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => toggleVehicle(vehicle.vehicle_number)}
+                                className="text-[12px] font-medium text-brand hover:underline"
+                              >
+                                {open ? "Hide" : "Show DOs"}
+                              </button>
+                            </td>
+                          </tr>
+                          {open && (
+                            <tr className="border-b border-border/50">
+                              <td colSpan={8} className="px-4 py-3 bg-surface-2/60">
+                                <div className="overflow-x-auto rounded-[10px] border border-border/70">
+                                  <table className="w-full min-w-[640px]">
+                                    <thead>
+                                      <tr className="border-b border-border/60">
+                                        <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                                          DO No.
+                                        </th>
+                                        <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                                          Date
+                                        </th>
+                                        <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                                          Direction
+                                        </th>
+                                        <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                                          Party
+                                        </th>
+                                        <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                                          Items
+                                        </th>
+                                        <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                                          Bags
+                                        </th>
+                                        <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                                          Weight
+                                        </th>
+                                        <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                                          DO Ref
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {vehicle.dos.map((doRow) => (
+                                        <tr
+                                          key={doRow.do_id}
+                                          className="border-b border-border/40 last:border-b-0"
+                                        >
+                                          <td className="px-3 py-2 text-[12px] font-medium text-ink">
+                                            {doRow.do_number}
+                                          </td>
+                                          <td className="px-3 py-2 text-[12px] text-ink-soft">
+                                            {formatDate(doRow.date)}
+                                          </td>
+                                          <td className="px-3 py-2">
+                                            <span
+                                              className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                                doRow.direction === "IN"
+                                                  ? "bg-green-500/15 text-green-400"
+                                                  : "bg-orange-500/15 text-orange-400"
+                                              }`}
+                                            >
+                                              {doRow.direction}
+                                            </span>
+                                          </td>
+                                          <td className="px-3 py-2 text-[12px] text-ink-soft truncate max-w-[160px]">
+                                            {doRow.party}
+                                          </td>
+                                          <td className="px-3 py-2 text-[12px] text-ink-soft text-right">
+                                            {doRow.item_count}
+                                          </td>
+                                          <td className="px-3 py-2 text-[12px] text-ink text-right">
+                                            {doRow.bags}
+                                          </td>
+                                          <td className="px-3 py-2 text-[12px] text-ink-soft text-right">
+                                            {formatWeight(doRow.total_weight)}
+                                          </td>
+                                          <td className="px-3 py-2 text-right">
+                                            <Link
+                                              href={`/challans/${doRow.do_id}`}
+                                              className="text-[12px] font-medium text-brand hover:underline"
+                                            >
+                                              Open
+                                            </Link>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

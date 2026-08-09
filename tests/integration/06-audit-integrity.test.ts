@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getServiceClient, apiRequest, isDatabaseReady } from "../helpers";
 import { seedWarehouse, seedUser, seedItem, seedParty, seedDO, TEST_PREFIX } from "../fixtures/seed";
-import crypto from "crypto";
 
 let skipTests = true;
 let svc: ReturnType<typeof getServiceClient>;
@@ -11,7 +10,6 @@ let whA: { warehouse_id: string };
 let whB: { warehouse_id: string };
 let adminA: { user_id: string; email: string; password: string };
 let adminB: { user_id: string; email: string; password: string };
-let tokenA = "";
 let tokenB = "";
 let item: { item_id: string; bag_size: number; name: string };
 let party: { party_id: string };
@@ -40,7 +38,6 @@ beforeAll(async () => {
   party = await seedParty(svc, whA.warehouse_id, `AudParty ${TEST_PREFIX}`);
   await seedDO(svc, whA.warehouse_id, adminA.user_id, party.party_id, "IN", "2026-08-01", `DO-AUD1-${TEST_PREFIX}`, [{ itemId: item.item_id, bags: 5, bagSize: 50 }]);
   await seedDO(svc, whA.warehouse_id, adminA.user_id, party.party_id, "OUT", "2026-08-02", `DO-AUD2-${TEST_PREFIX}`, [{ itemId: item.item_id, bags: 2, bagSize: 50 }]);
-  tokenA = await getToken(adminA.email, password);
   tokenB = await getToken(adminB.email, password);
 });
 

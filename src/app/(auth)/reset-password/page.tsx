@@ -14,8 +14,12 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [validToken, setValidToken] = useState<boolean | null>(() => {
-    if (typeof window !== "undefined" && window.location.hash.includes("access_token")) {
-      return true;
+    if (typeof window === "undefined") return null;
+    if (window.location.hash.includes("access_token")) return true;
+    try {
+      if (sessionStorage.getItem("resetRedirect") === "1") return true;
+    } catch {
+      // ignore
     }
     return null;
   });
@@ -29,22 +33,21 @@ export default function ResetPasswordPage() {
         setValidToken(true);
         sessionStorage.removeItem("resetRedirect");
       }
-      if (event === "SIGNED_IN" && typeof window !== "undefined" && window.location.hash.includes("type=invite")) {
+      if (
+        event === "SIGNED_IN" &&
+        typeof window !== "undefined" &&
+        window.location.hash.includes("type=invite")
+      ) {
         setValidToken(true);
         sessionStorage.removeItem("resetRedirect");
       }
     });
 
-    const hasHash =
-      typeof window !== "undefined" && window.location.hash.includes("access_token");
-
-    if (hasHash) {
-      setValidToken(true);
-      sessionStorage.removeItem("resetRedirect");
-    } else {
-      // Hash may already be cleared by Supabase; accept existing recovery session
+    // Hash / redirect flag already handled in useState initializer.
+    // Only check async session when we still don't know token validity.
+    if (validToken === null) {
       void supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session || sessionStorage.getItem("resetRedirect") === "1") {
+        if (session) {
           setValidToken(true);
           sessionStorage.removeItem("resetRedirect");
         } else {
@@ -53,13 +56,15 @@ export default function ResetPasswordPage() {
           }, 2000);
         }
       });
+    } else if (validToken === true) {
+      sessionStorage.removeItem("resetRedirect");
     }
 
     return () => {
       subscription.unsubscribe();
       if (invalidTimer) clearTimeout(invalidTimer);
     };
-  }, []);
+  }, [validToken]);
 
   const validate = (): string | null => {
     if (password.length < 8) return "Password must be at least 8 characters.";

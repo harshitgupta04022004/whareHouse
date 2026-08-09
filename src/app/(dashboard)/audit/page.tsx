@@ -73,7 +73,7 @@ export default function AuditPage() {
       } else {
         setIntegrityResult("Failed to verify integrity.");
       }
-    } catch (err) {
+    } catch {
       setIntegrityResult("Failed to verify integrity.");
     } finally {
       setVerifying(false);

@@ -1,4 +1,4 @@
-import { AppState, DO, User, WarehouseItem, DOItem } from "./types";
+import { AppState, DO, User, WarehouseItem } from "./types";
 
 const STORAGE_KEY = "radheshyam_warehouse";
 

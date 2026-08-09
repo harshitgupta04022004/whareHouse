@@ -220,6 +220,18 @@ export default function AdminDashboardPage() {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-border bg-white/[0.02]">
+                  <td className="px-4 py-3 text-[13px] font-bold text-ink">Total ({rows.length} items)</td>
+                  <td className="px-4 py-3"></td>
+                  <td className="px-4 py-3 text-[13px] text-green-400 text-right font-bold">{totals.totalInBags.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-[13px] text-green-400/80 text-right font-bold">{totals.totalInKg.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-[13px] text-orange-400 text-right font-bold">{totals.totalOutBags.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-[13px] text-orange-400/80 text-right font-bold">{totals.totalOutKg.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-[13px] text-ink text-right font-bold">{totals.totalRemaining.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-[13px] text-ink-soft text-right font-bold">{rows.reduce((sum, r) => sum + r.remaining_bags, 0).toLocaleString()}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>

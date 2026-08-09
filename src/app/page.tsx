@@ -9,7 +9,17 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
+    // If URL has a recovery/invite token, redirect to reset-password immediately
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash.includes("type=recovery") || hash.includes("type=invite")) {
+        router.replace("/reset-password" + hash);
+        return;
+      }
+    }
+
     if (loading) return;
+
     if (!session) {
       router.replace("/login");
       return;

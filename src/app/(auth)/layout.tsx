@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function AuthLayout({
   children,
@@ -43,6 +44,9 @@ export default function AuthLayout({
   if (loading) {
     return (
       <div className="aurora relative flex min-h-dvh items-center justify-center px-5 py-10">
+        <div className="absolute right-5 top-5">
+          <ThemeToggle compact />
+        </div>
         <div className="w-full max-w-[420px] animate-rise">
           <div className="mb-6 flex justify-center">
             <div className="w-9 h-9 rounded-[11px] bg-brand flex items-center justify-center animate-pulse">
@@ -71,6 +75,9 @@ export default function AuthLayout({
 
   return (
     <div className="aurora relative flex min-h-dvh items-center justify-center px-5 py-10">
+      <div className="absolute right-5 top-5">
+        <ThemeToggle compact />
+      </div>
       <div className="w-full max-w-[420px] animate-rise">
         <div className="mb-6 flex justify-center">
           <div className="flex items-center gap-2.5">

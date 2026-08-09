@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "./AuthProvider";
+import { ThemeToggle } from "./ThemeToggle";
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -112,6 +113,7 @@ export default function Navbar() {
             </nav>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle compact />
             {user && (
               <>
                 <Link

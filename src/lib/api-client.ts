@@ -51,6 +51,7 @@ export interface DOListParams {
   direction?: "IN" | "OUT";
   search?: string;
   userId?: string;
+  partyId?: string;
 }
 
 export async function listDOs(params: DOListParams = {}) {
@@ -62,6 +63,7 @@ export async function listDOs(params: DOListParams = {}) {
   if (params.direction) qs.set("direction", params.direction);
   if (params.search) qs.set("search", params.search);
   if (params.userId) qs.set("userId", params.userId);
+  if (params.partyId) qs.set("partyId", params.partyId);
 
   return authedFetch(`/do?${qs.toString()}`);
 }
@@ -126,8 +128,12 @@ export async function listParties(params: { cursor?: string; limit?: number; sea
   const qs = new URLSearchParams();
   if (params.cursor) qs.set("cursor", params.cursor);
   if (params.limit) qs.set("limit", String(params.limit));
-  if (params.search) qs.set("search", params.search);
+  if (params.search) qs.set("q", params.search);
   return authedFetch(`/parties?${qs.toString()}`);
+}
+
+export async function getParty(partyId: string) {
+  return authedFetch(`/parties?id=${encodeURIComponent(partyId)}`);
 }
 
 export async function createParty(data: { name: string }) {
@@ -272,6 +278,7 @@ export interface StoredFile {
   file_name: string;
   file_type: string;
   file_size: number;
+  drive_file_id: string;
   drive_url: string;
   folder_path: string;
   category: string;

@@ -228,8 +228,19 @@ export default function PartiesPage() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between group">
-                      <span className="text-[14px] text-ink font-medium">{party.name}</span>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/parties/${party.party_id}`)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <span className="text-[14px] font-medium text-ink transition-colors hover:text-brand">
+                          {party.name}
+                        </span>
+                        <span className="mt-0.5 block text-[11px] text-ink-faint">
+                          View DOs & details →
+                        </span>
+                      </button>
+                      <div className="flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                         <button
                           onClick={() => handleEdit(party)}
                           className="p-1 text-ink-faint hover:text-brand hover:bg-brand/10 rounded-lg transition-colors"

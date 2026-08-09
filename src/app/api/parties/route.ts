@@ -1,6 +1,6 @@
 import { requireAuth } from "@/lib/auth";
 import { checkRouteAccess } from "@/lib/rbac";
-import { handleApiError, ValidationError, ConflictError } from "@/lib/errors";
+import { handleApiError, ValidationError, ConflictError, NotFoundError } from "@/lib/errors";
 import { createServiceClient } from "@/lib/supabase";
 import { writeAudit } from "@/lib/audit";
 import { z } from "zod";
@@ -21,7 +21,7 @@ const updatePartySchema = z.object({
 
 /**
  * GET /api/parties
- * List all parties in the warehouse.
+ * List all parties in the warehouse, or fetch one with ?id=.
  */
 export async function GET(request: Request) {
   try {
@@ -29,11 +29,27 @@ export async function GET(request: Request) {
     await checkRouteAccess(ROUTE_KEY_GET, user);
 
     const url = new URL(request.url);
+    const partyId = url.searchParams.get("id");
+    const supabase = createServiceClient();
+
+    if (partyId) {
+      const { data, error } = await supabase
+        .from("parties")
+        .select("*")
+        .eq("party_id", partyId)
+        .eq("warehouse_id", user.warehouseId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) throw new NotFoundError("Party");
+
+      return Response.json({ party: data, data });
+    }
+
     const cursor = url.searchParams.get("cursor");
     const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") ?? "50", 10), 1), 100);
-    const q = url.searchParams.get("q");
+    const q = url.searchParams.get("q") ?? url.searchParams.get("search");
 
-    const supabase = createServiceClient();
     let query = supabase
       .from("parties")
       .select("*")

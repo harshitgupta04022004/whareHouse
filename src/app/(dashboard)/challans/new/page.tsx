@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { createDO, listItems, listParties, createParty } from "@/lib/api-client";
 import { todayStr } from "@/lib/utils";
@@ -25,13 +25,30 @@ interface LineItem {
 }
 
 export default function NewDOPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
+          <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />
+          <p className="text-[13px] text-ink-faint">Loading form...</p>
+        </div>
+      }
+    >
+      <NewDOPageInner />
+    </Suspense>
+  );
+}
+
+function NewDOPageInner() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedPartyId = searchParams.get("partyId") ?? "";
 
   const [doNumber, setDONumber] = useState("");
   const [date, setDate] = useState(todayStr());
   const [direction, setDirection] = useState<"IN" | "OUT">("IN");
-  const [partyId, setPartyId] = useState("");
+  const [partyId, setPartyId] = useState(preselectedPartyId);
   const [partyName, setPartyName] = useState("");
   const [items, setItems] = useState<LineItem[]>([{ itemId: "", vehicleNumber: "", bags: 0, totalWeight: 0 }]);
   const [summary, setSummary] = useState("");
@@ -49,8 +66,14 @@ export default function NewDOPage() {
     ]).then(([itemsRes, partiesRes]) => {
       setAvailableItems(itemsRes.data);
       setParties(partiesRes.data);
+      if (preselectedPartyId) {
+        const exists = (partiesRes.data as PartyOption[]).some(
+          (party) => party.party_id === preselectedPartyId,
+        );
+        if (exists) setPartyId(preselectedPartyId);
+      }
     });
-  }, [user]);
+  }, [user, preselectedPartyId]);
 
   const totals = useMemo(() => {
     return items.reduce(

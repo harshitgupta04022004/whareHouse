@@ -109,7 +109,7 @@ export async function GET(request: Request) {
         app_users(name),
         created_at,
         updated_at,
-        do_items(bags, total_weight)
+        do_items(bags, total_weight, item_id, items(name, bag_size))
       `)
       .eq("warehouse_id", user.warehouseId)
       .order("date", { ascending: false })

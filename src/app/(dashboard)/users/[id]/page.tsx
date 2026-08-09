@@ -11,6 +11,8 @@ interface AppUser {
   email: string;
   role: string;
   created_at: string;
+  last_seen_at?: string | null;
+  invite_status?: string | null;
 }
 
 interface DORow {
@@ -45,6 +47,8 @@ const actionColors: Record<string, string> = {
   delete: "bg-red-500/15 text-red-400",
   login: "bg-purple-500/15 text-purple-400",
   logout: "bg-yellow-500/15 text-yellow-400",
+  add_user: "bg-blue-500/15 text-blue-400",
+  remove_user: "bg-red-500/15 text-red-400",
 };
 
 function formatDate(value: string) {
@@ -136,7 +140,8 @@ export default function UserDetailPage() {
     () => logs.filter((l) => l.action === "login").length,
     [logs],
   );
-  const lastActive = logs[0]?.timestamp ?? profile?.created_at ?? null;
+  const lastActive =
+    logs[0]?.timestamp ?? profile?.last_seen_at ?? profile?.created_at ?? null;
 
   const handleRoleChange = async (newRole: string) => {
     if (!profile) return;

@@ -109,10 +109,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    } = supabase.auth.onAuthStateChange(async (event, s) => {
       setSession(s);
       if (s) {
         setUser(await resolveAppUser(s));
+        // Covers password, Google OAuth, and magic-link sign-ins.
+        // Skip INITIAL_SESSION / TOKEN_REFRESHED so page reloads don't spam login logs.
+        // Defer so we don't deadlock inside onAuthStateChange.
+        if (event === "SIGNED_IN") {
+          window.setTimeout(() => {
+            logLoginAudit().catch(() => {});
+          }, 0);
+        }
       } else {
         setUser(null);
       }
@@ -180,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             : error.message;
         return { error: msg };
       }
-      logLoginAudit().catch(() => {});
+      // Login audit is written via onAuthStateChange(SIGNED_IN)
       return {};
     },
     [supabase],

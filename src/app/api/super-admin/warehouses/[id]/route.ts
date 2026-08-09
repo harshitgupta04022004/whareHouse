@@ -72,11 +72,30 @@ export async function GET(
           .limit(limit),
         supabase
           .from("audit_log")
-          .select("log_id, entity, action, created_at, user_id")
+          .select(
+            "log_id, entity, entity_id, action, timestamp, user_id, ip_address, app_users(name)",
+          )
           .eq("warehouse_id", id)
-          .order("created_at", { ascending: false })
+          .order("timestamp", { ascending: false })
+          .order("log_id", { ascending: false })
           .limit(limit),
       ]);
+
+      // Surface query failures instead of silently returning empty arrays
+      for (const result of [users, items, parties, dos, files, audit]) {
+        if (result.error) throw result.error;
+      }
+
+      const auditRows = (audit.data ?? []).map((row) => ({
+        log_id: row.log_id,
+        entity: row.entity,
+        entity_id: row.entity_id,
+        action: row.action,
+        timestamp: row.timestamp,
+        user_id: row.user_id,
+        user_name: (row.app_users as { name: string } | null)?.name ?? null,
+        ip_address: row.ip_address,
+      }));
 
       return Response.json({
         data: {
@@ -86,14 +105,14 @@ export async function GET(
           parties: parties.data ?? [],
           dos: dos.data ?? [],
           files: files.data ?? [],
-          audit: audit.data ?? [],
+          audit: auditRows,
           counts: {
             users: users.data?.length ?? 0,
             items: items.data?.length ?? 0,
             parties: parties.data?.length ?? 0,
             dos: dos.count ?? dos.data?.length ?? 0,
             files: files.data?.length ?? 0,
-            audit: audit.data?.length ?? 0,
+            audit: auditRows.length,
           },
         },
       });
@@ -160,13 +179,29 @@ export async function GET(
         const { data, error: qError } = await supabase
           .from("audit_log")
           .select(
-            "log_id, entity, entity_id, action, created_at, user_id, new_data, old_data",
+            "log_id, entity, entity_id, action, timestamp, user_id, ip_address, new_data, old_data, app_users(name)",
           )
           .eq("warehouse_id", id)
-          .order("created_at", { ascending: false })
+          .order("timestamp", { ascending: false })
+          .order("log_id", { ascending: false })
           .limit(limit);
         if (qError) throw qError;
-        return Response.json({ data: data ?? [] });
+        return Response.json({
+          data:
+            data?.map((row) => ({
+              log_id: row.log_id,
+              entity: row.entity,
+              entity_id: row.entity_id,
+              action: row.action,
+              timestamp: row.timestamp,
+              user_id: row.user_id,
+              user_name:
+                (row.app_users as { name: string } | null)?.name ?? null,
+              ip_address: row.ip_address,
+              new_data: row.new_data,
+              old_data: row.old_data,
+            })) ?? [],
+        });
       }
       default:
         throw new ValidationError(

@@ -57,9 +57,12 @@ interface WarehouseDetail {
   audit: Array<{
     log_id: number | string;
     entity: string;
+    entity_id?: string | null;
     action: string;
-    created_at: string;
+    timestamp: string;
     user_id?: string | null;
+    user_name?: string | null;
+    ip_address?: string | null;
   }>;
 }
 
@@ -370,12 +373,15 @@ export default function SuperAdminWarehousePage() {
 
       {tab === "audit" && (
         <SimpleTable
-          headers={["When", "Entity", "Action", "User"]}
+          headers={["When", "Actor", "Action", "Entity", "IP"]}
           rows={data.audit.map((a) => [
-            a.created_at.replace("T", " ").slice(0, 19),
-            a.entity,
+            a.timestamp.replace("T", " ").slice(0, 19),
+            a.user_name ?? (a.user_id ? a.user_id.slice(0, 8) : "System"),
             a.action,
-            a.user_id?.slice(0, 8) ?? "—",
+            a.entity_id
+              ? `${a.entity} (${a.entity_id.slice(0, 8)}…)`
+              : a.entity,
+            a.ip_address ?? "—",
           ])}
         />
       )}

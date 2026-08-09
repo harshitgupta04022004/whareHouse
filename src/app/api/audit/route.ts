@@ -30,7 +30,12 @@ export async function GET(request: Request) {
 
     if (entity) query = query.eq("entity", entity);
     if (action) query = query.eq("action", action);
-    if (userId) query = query.eq("user_id", userId);
+    // Include actions by the user AND actions targeting the user (add_user, role changes, etc.)
+    if (userId) {
+      query = query.or(
+        `user_id.eq.${userId},and(entity.eq.user,entity_id.eq.${userId})`,
+      );
+    }
 
     const { data, error, count } = await query;
     if (error) throw error;

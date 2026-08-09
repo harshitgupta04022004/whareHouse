@@ -163,15 +163,26 @@ export default function DODetailPage() {
             DO: {DO.do_number} {DO.app_users && `· Created by ${DO.app_users.name}`}
           </p>
         </div>
-        <button
-          onClick={() => router.push(`/challans/${doId}/print`)}
-          className="inline-flex h-9 items-center gap-1.5 px-4 text-[13px] font-medium border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-          </svg>
-          Print
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            onClick={() => router.push(`/challans/${doId}/edit`)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border px-4 text-[13px] font-medium text-ink-soft transition-colors hover:bg-white/5 hover:text-ink"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Edit
+          </button>
+          <button
+            onClick={() => router.push(`/challans/${doId}/print`)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border px-4 text-[13px] font-medium text-ink-soft transition-colors hover:bg-white/5 hover:text-ink"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Print
+          </button>
+        </div>
       </div>
 
       {/* Items Table */}

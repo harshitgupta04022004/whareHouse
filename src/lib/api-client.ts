@@ -68,6 +68,10 @@ export async function listDOs(params: DOListParams = {}) {
   return authedFetch(`/do?${qs.toString()}`);
 }
 
+export async function getDO(id: string) {
+  return authedFetch(`/do?id=${encodeURIComponent(id)}`);
+}
+
 export async function createDO(data: Record<string, unknown>) {
   return authedFetch("/do", {
     method: "POST",
@@ -83,7 +87,7 @@ export async function updateDO(id: string, data: Record<string, unknown>, update
   return authedFetch(`/do?id=${id}`, {
     method: "PATCH",
     headers,
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, do_id: id }),
   });
 }
 

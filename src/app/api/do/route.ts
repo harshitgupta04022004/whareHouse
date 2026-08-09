@@ -302,6 +302,10 @@ export async function PATCH(request: Request) {
       .from("delivery_orders").select("*").eq("do_id", do_id).single();
 
     if (fetchError || !existingDo) throw new ValidationError("do_id", "Delivery order not found");
+    if (existingDo.warehouse_id !== user.warehouseId) {
+      throw new NotFoundError("Delivery order");
+    }
+    assertDoOwnership(existingDo.user_id, user);
 
     // Concurrent edit conflict check: verify updated_at matches expected
     if (updates.date !== undefined || updates.do_number !== undefined) {
@@ -369,6 +373,10 @@ export async function DELETE(request: Request) {
       .from("delivery_orders").select("*").eq("do_id", doId).single();
 
     if (fetchError || !existingDo) throw new ValidationError("id", "Delivery order not found");
+    if (existingDo.warehouse_id !== user.warehouseId) {
+      throw new NotFoundError("Delivery order");
+    }
+    assertDoOwnership(existingDo.user_id, user);
 
     const { data: existingItems } = await supabase.from("do_items").select("*").eq("do_id", doId);
 

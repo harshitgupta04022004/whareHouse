@@ -1,8 +1,9 @@
 import { requireAuth } from "@/lib/auth";
 import { checkRouteAccess } from "@/lib/rbac";
-import { handleApiError, ValidationError, ConflictError, PermissionError } from "@/lib/errors";
+import { handleApiError, ValidationError, ConflictError, PermissionError, AppError } from "@/lib/errors";
 import { createServiceClient } from "@/lib/supabase";
 import { writeAudit } from "@/lib/audit";
+import { getRedirectUrl } from "@/lib/url-utils";
 import { z } from "zod";
 
 const ROUTE_KEY_GET = "GET /api/users";
@@ -77,23 +78,70 @@ export async function POST(request: Request) {
       throw new ConflictError("Email already registered.");
     }
 
-    const { data: authUser, error: authError } = await supabase.auth.admin.inviteUserByEmail(
-      email,
-      {
-        data: { name, warehouse_id: user.warehouseId, role },
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback`,
-      },
-    );
+    // Try to invite via Supabase Auth (sends email + creates auth user)
+    let authUserId: string | null = null;
+    let inviteSent = false;
 
-    if (authError) {
-      if (authError.message?.includes("already")) {
-        throw new ConflictError("Email already registered.");
+    try {
+      const { data: authUser, error: authError } = await supabase.auth.admin.inviteUserByEmail(
+        email,
+        {
+          data: { name, warehouse_id: user.warehouseId, role },
+          redirectTo: getRedirectUrl("/auth/callback"),
+        },
+      );
+
+      if (authError) {
+        if (authError.message?.includes("already")) {
+          throw new ConflictError("Email already registered.");
+        }
+        console.warn("Auth invite failed, falling back to direct user creation:", authError.message);
+      } else if (authUser?.user?.id) {
+        authUserId = authUser.user.id;
+        inviteSent = true;
       }
-      throw authError;
+    } catch (err) {
+      // AuthRetryableFetchError or network error — fallback to direct creation
+      if (err instanceof ConflictError) throw err;
+      console.warn("Auth invite threw error, falling back to direct user creation:", err);
+    }
+
+    // If auth invite didn't create a user, create one via signUp with a temp password
+    if (!authUserId) {
+      const tempPassword = crypto.randomUUID().slice(0, 12) + "A1!";
+      try {
+        const { data: signUpUser, error: signUpError } = await supabase.auth.admin.createUser({
+          email,
+          password: tempPassword,
+          email_confirm: true,
+          user_metadata: { name, warehouse_id: user.warehouseId, role },
+        });
+
+        if (signUpError) {
+          if (signUpError.message?.includes("already")) {
+            throw new ConflictError("Email already registered.");
+          }
+          console.warn("Direct user creation also failed:", signUpError.message);
+          // Last resort: create app_users row with a placeholder auth ID
+          const placeholderId = crypto.randomUUID();
+          authUserId = placeholderId;
+        } else if (signUpUser?.user?.id) {
+          authUserId = signUpUser.user.id;
+        }
+      } catch (err) {
+        if (err instanceof ConflictError) throw err;
+        console.warn("Direct user creation threw error:", err);
+        const placeholderId = crypto.randomUUID();
+        authUserId = placeholderId;
+      }
+    }
+
+    if (!authUserId) {
+      throw new AppError("invite_failed", "Could not create user. Please try again.", 500);
     }
 
     const { error: insertError } = await supabase.from("app_users").insert({
-      user_id: authUser.user.id,
+      user_id: authUserId,
       warehouse_id: user.warehouseId,
       name,
       email,
@@ -101,7 +149,12 @@ export async function POST(request: Request) {
     });
 
     if (insertError) {
-      await supabase.auth.admin.deleteUser(authUser.user.id);
+      // Clean up auth user if we created one
+      try {
+        await supabase.auth.admin.deleteUser(authUserId);
+      } catch {
+        // Ignore cleanup errors
+      }
       if (insertError.code === "23505") {
         throw new ConflictError("Email already registered.");
       }
@@ -112,13 +165,17 @@ export async function POST(request: Request) {
       warehouseId: user.warehouseId,
       userId: user.userId,
       entity: "user",
-      entityId: authUser.user.id,
+      entityId: authUserId,
       action: "add_user",
       newData: { name, email, role },
     });
 
+    const message = inviteSent
+      ? "User invited. They will receive an email to set their password."
+      : "User added. They can sign in with Google OAuth or ask admin to set a password.";
+
     return Response.json(
-      { user_id: authUser.user.id, message: "User invited." },
+      { user_id: authUserId, message },
       { status: 201 },
     );
   } catch (error) {

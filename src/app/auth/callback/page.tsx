@@ -15,7 +15,7 @@ function CallbackHandler() {
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (!error) {
-          router.replace("/");
+          router.replace("/set-password");
         } else {
           router.replace("/login?error=auth_failed");
         }

@@ -36,9 +36,14 @@ export default function PartiesPage() {
     }
   }
 
+  const trimmedName = newName.trim();
+  const isDuplicate = trimmedName.length > 0 && parties.some(
+    (p) => p.name.toLowerCase() === trimmedName.toLowerCase()
+  );
+
   const handleAdd = async () => {
     const name = newName.trim();
-    if (!name) return;
+    if (!name || isDuplicate) return;
     try {
       await createParty({ name });
       setNewName("");
@@ -50,7 +55,7 @@ export default function PartiesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Remove this party?")) return;
+    if (!confirm("Remove this party? / यह पार्टी हटाएं?")) return;
     try {
       await deleteParty(id);
       setParties((prev) => prev.filter((p) => p.party_id !== id));
@@ -70,10 +75,13 @@ export default function PartiesPage() {
       </div>
 
       <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
-        Parties
+        Parties <span className="text-[18px] text-ink-soft font-normal">/ पार्टी</span>
       </h1>
       <p className="text-[14px] text-ink-soft mb-2">
         Manage trading parties — buyers, suppliers and transporters.
+      </p>
+      <p className="text-[13px] text-ink-faint mb-1">
+        खरीदार, आपूर्तिकर्ता और ट्रांसपोर्टर की पार्टी प्रबंधित करें।
       </p>
       <p className="text-[12px] text-ink-faint mb-8">
         These appear in the DO form when selecting a party.
@@ -82,7 +90,7 @@ export default function PartiesPage() {
       <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-            Parties ({parties.length})
+            Parties / पार्टी ({parties.length})
           </span>
           <button
             onClick={() => setShowAdd(true)}
@@ -91,46 +99,56 @@ export default function PartiesPage() {
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            Add party
+            Add party / पार्टी जोड़ें
           </button>
         </div>
 
         {showAdd && (
-          <div className="flex items-center gap-2 px-5 py-3 bg-white/[0.02] border-b border-border">
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              autoFocus
-              className="focus-ring flex-1 h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink placeholder:text-ink-faint transition-colors"
-              placeholder="Party name"
-            />
-            <button
-              onClick={handleAdd}
-              className="h-9 px-3 bg-brand hover:bg-brand-strong text-brand-ink text-[12px] font-semibold rounded-[9px] shadow-[var(--shadow-sm)] transition-all"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => { setShowAdd(false); setNewName(""); }}
-              className="h-9 px-3 text-[12px] font-medium text-ink-faint hover:text-ink transition-colors"
-            >
-              Cancel
-            </button>
+          <div className="px-5 py-3 bg-white/[0.02] border-b border-border space-y-2">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !isDuplicate && handleAdd()}
+                autoFocus
+                className={`focus-ring flex-1 h-9 rounded-[9px] border px-3 text-[13px] text-ink placeholder:text-ink-faint transition-colors bg-surface-2 ${
+                  isDuplicate ? "border-red-500/50" : "border-border"
+                }`}
+                placeholder="Party name / पार्टी का नाम"
+              />
+              <button
+                onClick={handleAdd}
+                disabled={isDuplicate || !trimmedName}
+                className="h-9 px-3 bg-brand hover:bg-brand-strong text-brand-ink text-[12px] font-semibold rounded-[9px] shadow-[var(--shadow-sm)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Add / जोड़ें
+              </button>
+              <button
+                onClick={() => { setShowAdd(false); setNewName(""); }}
+                className="h-9 px-3 text-[12px] font-medium text-ink-faint hover:text-ink transition-colors"
+              >
+                Cancel / रद्द
+              </button>
+            </div>
+            {isDuplicate && (
+              <p className="text-[12px] text-red-400">
+                A party with this name already exists. / इस नाम की पार्टी पहले से मौजूद है।
+              </p>
+            )}
           </div>
         )}
 
         {loading ? (
           <div className="px-5 py-8 text-center text-[13px] text-ink-faint">
             <div className="w-5 h-5 border-2 border-brand/30 border-t-brand rounded-full animate-spin mx-auto mb-2" />
-            Loading parties...
+            Loading parties... / पार्टी लोड हो रही है...
           </div>
         ) : (
           <div className="divide-y divide-border/50">
             {parties.length === 0 ? (
               <div className="px-5 py-8 text-center text-[13px] text-ink-faint">
-                No parties yet. Add your first party above.
+                No parties yet. Add your first party above. / अभी कोई पार्टी नहीं। पहली पार्टी ऊपर जोड़ें।
               </div>
             ) : (
               parties.map((party) => (

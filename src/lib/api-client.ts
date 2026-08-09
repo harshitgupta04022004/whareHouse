@@ -193,8 +193,7 @@ export async function listAuditLog(params: { cursor?: string; limit?: number; ac
 }
 
 export async function verifyAuditIntegrity() {
-  const res = await authedFetch("/audit?verify=true");
-  return res;
+  return authedFetch("/audit/integrity");
 }
 
 // ─── Files ────────────────────────────────────────────────────────

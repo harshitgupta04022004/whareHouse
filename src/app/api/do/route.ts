@@ -79,7 +79,8 @@ export async function GET(request: Request) {
         user_id,
         app_users(name),
         created_at,
-        updated_at
+        updated_at,
+        do_items(bags, total_weight)
       `)
       .eq("warehouse_id", user.warehouseId)
       .order("date", { ascending: false })
@@ -123,6 +124,7 @@ export async function GET(request: Request) {
         user_id: row.user_id,
         creator_name: (row.app_users as { name: string } | null)?.name ?? null,
         app_users: row.app_users,
+        do_items: row.do_items,
         created_at: row.created_at,
         updated_at: row.updated_at,
       })),
@@ -136,6 +138,7 @@ export async function GET(request: Request) {
         party_name: (row.parties as { name: string } | null)?.name ?? null,
         user_id: row.user_id,
         creator_name: (row.app_users as { name: string } | null)?.name ?? null,
+        do_items: row.do_items,
         created_at: row.created_at,
         updated_at: row.updated_at,
       })),

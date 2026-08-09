@@ -48,11 +48,12 @@ export async function GET(request: Request) {
       summaries?.map((s) => [s.item_id, s]) ?? [],
     );
 
-    // Get date-filtered IN/OUT per product
+    // Get date-filtered IN/OUT per product (both bags and weight)
     const { data: filteredDoItems } = await supabase
       .from("do_items")
       .select(`
         item_id,
+        bags,
         total_weight,
         delivery_orders!inner(direction, date, warehouse_id)
       `)
@@ -60,24 +61,26 @@ export async function GET(request: Request) {
       .gte("delivery_orders.date", startDate)
       .lte("delivery_orders.date", endDate);
 
-    const filteredAgg = new Map<string, { total_in: number; total_out: number }>();
+    const filteredAgg = new Map<string, { in_bags: number; in_kg: number; out_bags: number; out_kg: number }>();
 
     if (filteredDoItems) {
       for (const row of filteredDoItems) {
         const doRef = row.delivery_orders as unknown as { direction: string };
-        const existing = filteredAgg.get(row.item_id) ?? { total_in: 0, total_out: 0 };
+        const existing = filteredAgg.get(row.item_id) ?? { in_bags: 0, in_kg: 0, out_bags: 0, out_kg: 0 };
 
         if (doRef.direction === "IN") {
-          existing.total_in += Number(row.total_weight);
+          existing.in_bags += row.bags;
+          existing.in_kg += Number(row.total_weight);
         } else {
-          existing.total_out += Number(row.total_weight);
+          existing.out_bags += row.bags;
+          existing.out_kg += Number(row.total_weight);
         }
         filteredAgg.set(row.item_id, existing);
       }
     }
 
     const matrix = (products ?? []).map((item) => {
-      const filtered = filteredAgg.get(item.item_id) ?? { total_in: 0, total_out: 0 };
+      const filtered = filteredAgg.get(item.item_id) ?? { in_bags: 0, in_kg: 0, out_bags: 0, out_kg: 0 };
       const summary = summaryMap.get(item.item_id);
       const remaining = Number(summary?.remaining ?? 0);
       const remainingBags = item.bag_size > 0 ? Math.floor(remaining / item.bag_size) : 0;
@@ -86,8 +89,10 @@ export async function GET(request: Request) {
         item_id: item.item_id,
         product: item.name,
         bag_size: item.bag_size,
-        total_in: Math.round(filtered.total_in * 100) / 100,
-        total_out: Math.round(filtered.total_out * 100) / 100,
+        in_bags: filtered.in_bags,
+        in_kg: Math.round(filtered.in_kg * 100) / 100,
+        out_bags: filtered.out_bags,
+        out_kg: Math.round(filtered.out_kg * 100) / 100,
         remaining: Math.round(remaining * 100) / 100,
         remaining_bags: remainingBags,
       };

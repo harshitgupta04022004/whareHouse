@@ -10,9 +10,12 @@ interface ProductRow {
   item_id: string;
   product: string;
   bag_size: number;
-  total_in: number;
-  total_out: number;
+  in_bags: number;
+  in_kg: number;
+  out_bags: number;
+  out_kg: number;
   remaining: number;
+  remaining_bags: number;
 }
 
 export default function AdminDashboardPage() {
@@ -77,18 +80,20 @@ export default function AdminDashboardPage() {
   const totals = useMemo(() => {
     return rows.reduce(
       (acc, r) => ({
-        totalIn: acc.totalIn + r.total_in,
-        totalOut: acc.totalOut + r.total_out,
+        totalInBags: acc.totalInBags + r.in_bags,
+        totalInKg: acc.totalInKg + r.in_kg,
+        totalOutBags: acc.totalOutBags + r.out_bags,
+        totalOutKg: acc.totalOutKg + r.out_kg,
         totalRemaining: acc.totalRemaining + r.remaining,
       }),
-      { totalIn: 0, totalOut: 0, totalRemaining: 0 }
+      { totalInBags: 0, totalInKg: 0, totalOutBags: 0, totalOutKg: 0, totalRemaining: 0 }
     );
   }, [rows]);
 
   const exportCSV = () => {
-    const header = "Product,Bag Size (kg),IN,OUT,Remaining,Remaining Bags";
+    const header = "Product,Bag Size (kg),IN (bags),IN (kg),OUT (bags),OUT (kg),Remaining,Remaining Bags";
     const csvRows = rows.map((r) =>
-      [r.product, r.bag_size, r.total_in, r.total_out, r.remaining, r.bag_size > 0 ? Math.round(r.remaining / r.bag_size) : 0].join(",")
+      [r.product, r.bag_size, r.in_bags, r.in_kg, r.out_bags, r.out_kg, r.remaining, r.remaining_bags].join(",")
     );
     const csv = [header, ...csvRows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -151,18 +156,20 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total IN</div>
-          <div className="font-display text-[28px] font-bold text-green-400 leading-none">{totals.totalIn.toLocaleString()}</div>
+          <div className="font-display text-[28px] font-bold text-green-400 leading-none">{totals.totalInBags.toLocaleString()}</div>
           <div className="text-[11px] text-ink-faint mt-1.5">bags in period</div>
+          <div className="text-[13px] text-green-400/80 mt-1">{totals.totalInKg.toLocaleString()} kg</div>
         </div>
         <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total OUT</div>
-          <div className="font-display text-[28px] font-bold text-orange-400 leading-none">{totals.totalOut.toLocaleString()}</div>
+          <div className="font-display text-[28px] font-bold text-orange-400 leading-none">{totals.totalOutBags.toLocaleString()}</div>
           <div className="text-[11px] text-ink-faint mt-1.5">bags in period</div>
+          <div className="text-[13px] text-orange-400/80 mt-1">{totals.totalOutKg.toLocaleString()} kg</div>
         </div>
         <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total Remaining</div>
           <div className="font-display text-[28px] font-bold text-ink leading-none">{totals.totalRemaining.toLocaleString()}</div>
-          <div className="text-[11px] text-ink-faint mt-1.5">bags all time</div>
+          <div className="text-[11px] text-ink-faint mt-1.5">kg remaining all time</div>
         </div>
       </div>
 
@@ -187,30 +194,31 @@ export default function AdminDashboardPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">Product</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">Bag Size</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">IN (bags)</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">OUT (bags)</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">Remaining</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-3">Bags Left</th>
+                  <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Product</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Bag Size</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">IN (bags)</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">IN (kg)</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">OUT (bags)</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">OUT (kg)</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Remaining</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Bags Left</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
-                  const bagsLeft = r.bag_size > 0 ? Math.round(r.remaining / r.bag_size) : 0;
-                  return (
-                    <tr key={r.item_id} className="border-b border-border/50 last:border-0 hover:bg-white/[0.02] transition-colors">
-                      <td className="px-5 py-3 text-[13px] font-medium text-ink">{r.product}</td>
-                      <td className="px-5 py-3 text-[13px] text-ink-soft text-right">{r.bag_size} kg</td>
-                      <td className="px-5 py-3 text-[13px] text-green-400 text-right font-medium">{r.total_in.toLocaleString()}</td>
-                      <td className="px-5 py-3 text-[13px] text-orange-400 text-right font-medium">{r.total_out.toLocaleString()}</td>
-                      <td className={`px-5 py-3 text-[13px] text-right font-semibold ${r.remaining > 0 ? "text-ink" : r.remaining < 0 ? "text-red-400" : "text-ink-faint"}`}>
-                        {r.remaining.toLocaleString()}
-                      </td>
-                      <td className="px-5 py-3 text-[13px] text-ink-soft text-right">{bagsLeft.toLocaleString()}</td>
-                    </tr>
-                  );
-                })}
+                {rows.map((r) => (
+                  <tr key={r.item_id} className="border-b border-border/50 last:border-0 hover:bg-white/[0.02] transition-colors">
+                    <td className="px-4 py-3 text-[13px] font-medium text-ink">{r.product}</td>
+                    <td className="px-4 py-3 text-[13px] text-ink-soft text-right">{r.bag_size} kg</td>
+                    <td className="px-4 py-3 text-[13px] text-green-400 text-right font-medium">{r.in_bags.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-[13px] text-green-400/80 text-right">{r.in_kg.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-[13px] text-orange-400 text-right font-medium">{r.out_bags.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-[13px] text-orange-400/80 text-right">{r.out_kg.toLocaleString()}</td>
+                    <td className={`px-4 py-3 text-[13px] text-right font-semibold ${r.remaining > 0 ? "text-ink" : r.remaining < 0 ? "text-red-400" : "text-ink-faint"}`}>
+                      {r.remaining.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-ink-soft text-right">{r.remaining_bags.toLocaleString()}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

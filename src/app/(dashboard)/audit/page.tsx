@@ -63,13 +63,14 @@ export default function AuditPage() {
     setIntegrityResult(null);
     try {
       const result = await verifyAuditIntegrity();
-      if (result.data?.[0]) {
-        const r = result.data[0];
+      if (result && typeof result.ok === "boolean") {
         setIntegrityResult(
-          r.ok
+          result.ok
             ? "Audit chain integrity verified — no tampering detected."
-            : `Chain broken at log #${r.broken_at}: ${r.message}`
+            : `Chain broken at log #${result.brokenAt}: ${result.message}`
         );
+      } else {
+        setIntegrityResult("Failed to verify integrity.");
       }
     } catch (err) {
       setIntegrityResult("Failed to verify integrity.");

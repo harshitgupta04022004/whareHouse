@@ -23,6 +23,7 @@ export default function UsersPage() {
   const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState("staff");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     if (!user || user.role !== "admin") {
@@ -47,8 +48,10 @@ export default function UsersPage() {
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !inviteName.trim()) return;
     setError("");
+    setSuccess("");
     try {
-      await inviteUser({ email: inviteEmail, name: inviteName, role: inviteRole });
+      const result = await inviteUser({ email: inviteEmail, name: inviteName, role: inviteRole });
+      setSuccess(result.message || "User invited successfully.");
       setInviteEmail("");
       setInviteName("");
       setInviteRole("staff");
@@ -112,7 +115,7 @@ export default function UsersPage() {
             Users ({users.length})
           </span>
           <button
-            onClick={() => setShowInvite(true)}
+            onClick={() => { setShowInvite(true); setSuccess(""); setError(""); }}
             className="flex items-center gap-1 text-[12px] font-semibold text-brand hover:text-brand-hover transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
@@ -121,6 +124,12 @@ export default function UsersPage() {
             Invite user
           </button>
         </div>
+
+        {success && (
+          <div className="mx-5 mt-3 bg-green-500/10 border border-green-500/20 text-green-400 text-[12px] px-3 py-1.5 rounded-lg">
+            {success}
+          </div>
+        )}
 
         {showInvite && (
           <div className="px-5 py-3 bg-white/[0.02] border-b border-border space-y-2">

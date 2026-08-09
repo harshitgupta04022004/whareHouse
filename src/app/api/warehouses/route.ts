@@ -74,6 +74,41 @@ export async function POST(request: Request) {
       throw userError ?? new Error("Failed to create admin membership");
     }
 
+    // Seed default items
+    const DEFAULT_ITEMS = [
+      { name: "Wheat", bag_size: 50 },
+      { name: "Rice", bag_size: 100 },
+      { name: "Salt", bag_size: 25 },
+      { name: "Sugar", bag_size: 50 },
+      { name: "Duddy", bag_size: 50 },
+      { name: "Nuts", bag_size: 50 },
+      { name: "Gram", bag_size: 50 },
+      { name: "Malta", bag_size: 50 },
+    ];
+
+    await supabase.from("items").insert(
+      DEFAULT_ITEMS.map((item) => ({
+        warehouse_id: warehouse.warehouse_id,
+        name: item.name,
+        bag_size: item.bag_size,
+      })),
+    );
+
+    // Seed default parties
+    const DEFAULT_PARTIES = [
+      "ABC Suppliers",
+      "XYZ Traders",
+      "Quick Transport",
+      "Local Distributors",
+    ];
+
+    await supabase.from("parties").insert(
+      DEFAULT_PARTIES.map((name) => ({
+        warehouse_id: warehouse.warehouse_id,
+        name,
+      })),
+    );
+
     await writeAudit(supabase, {
       warehouseId: warehouse.warehouse_id,
       userId: identity.userId,

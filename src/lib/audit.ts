@@ -9,6 +9,8 @@ import { getClientIp, getUserAgent } from "@/lib/auth";
 export interface AuditEntry {
   warehouseId: string;
   userId: string | null;
+  /** Snapshot of the actor's display name (survives user deletion). */
+  actorName?: string | null;
   entity: string;
   entityId: string | null;
   action: string;
@@ -73,6 +75,7 @@ async function computeHash(
  *
  * Pass the incoming `request` so IP / user-agent are stored for every action
  * (not only login/logout). Explicit entry.ipAddress / userAgent still win.
+ * Actor display name is snapshotted so it remains after the user is removed.
  */
 export async function writeAudit(
   supabase: SupabaseClient,
@@ -84,6 +87,28 @@ export async function writeAudit(
     entry.ipAddress ?? (request ? getClientIp(request) : null) ?? null;
   const userAgent =
     entry.userAgent ?? (request ? getUserAgent(request) : null) ?? null;
+
+  let actorName = entry.actorName?.trim() || null;
+  if (!actorName && entry.userId) {
+    const { data: actor } = await supabase
+      .from("app_users")
+      .select("name")
+      .eq("user_id", entry.userId)
+      .maybeSingle();
+    actorName = actor?.name?.trim() || null;
+  }
+  if (!actorName) {
+    const fromPayload =
+      (typeof entry.newData?.name === "string" && entry.newData.name) ||
+      (typeof entry.oldData?.name === "string" && entry.oldData.name) ||
+      (typeof entry.newData?.email === "string" && entry.newData.email) ||
+      (typeof entry.oldData?.email === "string" && entry.oldData.email) ||
+      null;
+    // Only use payload identity for login/logout where payload IS the actor.
+    if (entry.action === "login" || entry.action === "logout") {
+      actorName = fromPayload;
+    }
+  }
 
   // Compute content hash first. Chain linking is done atomically in Postgres
   // so concurrent writes cannot leave a broken previous_hash.
@@ -110,6 +135,7 @@ export async function writeAudit(
     p_request_id: entry.requestId ?? null,
     p_current_hash: currentHash,
     p_timestamp: timestamp,
+    p_actor_name: actorName,
   });
 
   if (error) {
@@ -130,6 +156,7 @@ export async function writeAudit(
     const auditRow: any = {
       warehouse_id: entry.warehouseId,
       user_id: entry.userId,
+      actor_name: actorName ?? undefined,
       entity: entry.entity,
       entity_id: entry.entityId,
       action: entry.action,

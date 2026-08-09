@@ -261,6 +261,7 @@ export type Database = {
           log_id: number;
           warehouse_id: string;
           user_id: string | null;
+          actor_name: string | null;
           entity: string;
           entity_id: string | null;
           action: string;
@@ -278,6 +279,7 @@ export type Database = {
           log_id?: never;
           warehouse_id: string;
           user_id?: string | null;
+          actor_name?: string | null;
           entity: string;
           entity_id?: string | null;
           action: string;
@@ -295,6 +297,7 @@ export type Database = {
           log_id?: never;
           warehouse_id?: string;
           user_id?: string | null;
+          actor_name?: string | null;
           entity?: string;
           entity_id?: string | null;
           action?: string;
@@ -491,6 +494,7 @@ export type Database = {
           p_request_id: string | null;
           p_current_hash: string;
           p_timestamp?: string;
+          p_actor_name?: string | null;
         };
         Returns: number;
       };

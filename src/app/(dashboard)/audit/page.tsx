@@ -9,8 +9,11 @@ import ExportMenu from "@/components/ExportMenu";
 interface AuditEntry {
   log_id: number;
   user_id: string | null;
+  actor_name?: string | null;
+  user_name?: string | null;
   entity: string;
   entity_id: string | null;
+  target_name?: string | null;
   action: string;
   ip_address: string | null;
   timestamp: string;
@@ -159,9 +162,13 @@ export default function AuditPage() {
             ]}
             rows={entries.map((e) => ({
               timestamp: e.timestamp ? new Date(e.timestamp).toLocaleString("en-IN") : "",
-              user: e.app_users?.name ?? e.user_id ?? "",
+              user: e.actor_name ?? e.user_name ?? e.app_users?.name ?? e.user_id ?? "",
               action: e.action,
-              entity: e.entity,
+              entity: e.target_name
+                ? `${e.entity} · ${e.target_name}`
+                : e.entity_id
+                  ? `${e.entity} (${e.entity_id})`
+                  : e.entity,
               entity_id: e.entity_id ?? "",
               ip_address: e.ip_address ?? "",
             }))}
@@ -250,7 +257,10 @@ export default function AuditPage() {
                         {new Date(entry.timestamp).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}
                       </td>
                       <td className="px-5 py-2.5 text-[12px] text-ink-soft">
-                        {entry.app_users?.name || entry.user_id?.slice(0, 8) || "System"}
+                        {entry.actor_name ||
+                          entry.user_name ||
+                          entry.app_users?.name ||
+                          (entry.user_id ? entry.user_id.slice(0, 8) : "System")}
                       </td>
                       <td className="px-5 py-2.5">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${actionColors[entry.action] || "bg-white/5 text-ink-faint"}`}>
@@ -259,7 +269,11 @@ export default function AuditPage() {
                       </td>
                       <td className="px-5 py-2.5 text-[12px] text-ink-soft">
                         {entry.entity}
-                        {entry.entity_id && <span className="text-ink-faint ml-1">({entry.entity_id.slice(0, 8)}...)</span>}
+                        {entry.target_name ? (
+                          <span className="text-ink ml-1">· {entry.target_name}</span>
+                        ) : entry.entity_id ? (
+                          <span className="text-ink-faint ml-1">({entry.entity_id.slice(0, 8)}...)</span>
+                        ) : null}
                       </td>
                       <td className="px-5 py-2.5 text-[11px] text-ink-faint font-mono">{entry.ip_address || "—"}</td>
                     </tr>

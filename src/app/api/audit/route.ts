@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from("audit_log")
-      .select("log_id, user_id, entity, entity_id, action, old_data, new_data, ip_address, request_id, timestamp, app_users(name)", { count: "exact" })
+      .select("log_id, user_id, actor_name, entity, entity_id, action, old_data, new_data, ip_address, request_id, timestamp, app_users(name)", { count: "exact" })
       .eq("warehouse_id", user.warehouseId)
       .order("timestamp", { ascending: false })
       .order("log_id", { ascending: false })
@@ -40,35 +40,45 @@ export async function GET(request: Request) {
     const { data, error, count } = await query;
     if (error) throw error;
 
+    const mapRow = (row: {
+      log_id: number;
+      user_id: string | null;
+      actor_name?: string | null;
+      entity: string;
+      entity_id: string | null;
+      action: string;
+      old_data: Record<string, unknown> | null;
+      new_data: Record<string, unknown> | null;
+      ip_address: string | null;
+      request_id: string | null;
+      timestamp: string;
+      app_users: { name: string } | null;
+    }) => {
+      const joinedName = row.app_users?.name ?? null;
+      const actorName = row.actor_name?.trim() || joinedName;
+      const targetName = targetLabelFromPayload(row.entity, row.new_data, row.old_data);
+
+      return {
+        log_id: row.log_id,
+        user_id: row.user_id,
+        actor_name: actorName,
+        user_name: actorName,
+        app_users: actorName ? { name: actorName } : row.app_users,
+        entity: row.entity,
+        entity_id: row.entity_id,
+        target_name: targetName,
+        action: row.action,
+        old_data: row.old_data,
+        new_data: row.new_data,
+        ip_address: row.ip_address,
+        request_id: row.request_id,
+        timestamp: row.timestamp,
+      };
+    };
+
     return Response.json({
-      entries: data?.map((row) => ({
-        log_id: row.log_id,
-        user_id: row.user_id,
-        user_name: (row.app_users as { name: string } | null)?.name ?? null,
-        app_users: row.app_users,
-        entity: row.entity,
-        entity_id: row.entity_id,
-        action: row.action,
-        old_data: row.old_data,
-        new_data: row.new_data,
-        ip_address: row.ip_address,
-        request_id: row.request_id,
-        timestamp: row.timestamp,
-      })) ?? [],
-      data: data?.map((row) => ({
-        log_id: row.log_id,
-        user_id: row.user_id,
-        user_name: (row.app_users as { name: string } | null)?.name ?? null,
-        app_users: row.app_users,
-        entity: row.entity,
-        entity_id: row.entity_id,
-        action: row.action,
-        old_data: row.old_data,
-        new_data: row.new_data,
-        ip_address: row.ip_address,
-        request_id: row.request_id,
-        timestamp: row.timestamp,
-      })) ?? [],
+      entries: data?.map(mapRow) ?? [],
+      data: data?.map(mapRow) ?? [],
       total: count ?? 0,
       limit,
       offset,
@@ -78,6 +88,24 @@ export async function GET(request: Request) {
   } catch (error) {
     return handleApiError(error);
   }
+}
+
+function targetLabelFromPayload(
+  entity: string,
+  newData: Record<string, unknown> | null,
+  oldData: Record<string, unknown> | null,
+): string | null {
+  if (entity !== "user") return null;
+  const name =
+    (typeof newData?.name === "string" && newData.name) ||
+    (typeof oldData?.name === "string" && oldData.name) ||
+    null;
+  const email =
+    (typeof newData?.email === "string" && newData.email) ||
+    (typeof oldData?.email === "string" && oldData.email) ||
+    null;
+  if (name && email) return `${name} (${email})`;
+  return name || email || null;
 }
 
 export async function HEAD(request: Request) {

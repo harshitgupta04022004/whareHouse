@@ -70,10 +70,11 @@ export async function POST(request: Request) {
     await writeAudit(supabase, {
       warehouseId: user.warehouseId,
       userId: user.userId,
+      actorName: user.name,
       entity: "user",
       entityId: user.userId,
       action: "login",
-      newData: { email: user.email, role: user.role },
+      newData: { email: user.email, role: user.role, name: user.name },
       ipAddress: ip,
       userAgent: ua,
       sessionId,
@@ -102,10 +103,11 @@ export async function DELETE(request: Request) {
       await writeAudit(supabase, {
         warehouseId: user.warehouseId,
         userId: user.userId,
+        actorName: user.name,
         entity: "user",
         entityId: user.userId,
         action: "logout",
-        oldData: { email: user.email, role: user.role },
+        oldData: { email: user.email, role: user.role, name: user.name },
         ipAddress: ip,
         userAgent: ua,
       });

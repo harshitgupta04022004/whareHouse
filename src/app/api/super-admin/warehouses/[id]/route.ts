@@ -73,7 +73,7 @@ export async function GET(
         supabase
           .from("audit_log")
           .select(
-            "log_id, entity, entity_id, action, timestamp, user_id, ip_address, app_users(name)",
+            "log_id, entity, entity_id, action, timestamp, user_id, actor_name, ip_address, app_users(name)",
           )
           .eq("warehouse_id", id)
           .order("timestamp", { ascending: false })
@@ -93,7 +93,10 @@ export async function GET(
         action: row.action,
         timestamp: row.timestamp,
         user_id: row.user_id,
-        user_name: (row.app_users as { name: string } | null)?.name ?? null,
+        user_name:
+          row.actor_name ??
+          (row.app_users as { name: string } | null)?.name ??
+          null,
         ip_address: row.ip_address,
       }));
 
@@ -179,7 +182,7 @@ export async function GET(
         const { data, error: qError } = await supabase
           .from("audit_log")
           .select(
-            "log_id, entity, entity_id, action, timestamp, user_id, ip_address, new_data, old_data, app_users(name)",
+            "log_id, entity, entity_id, action, timestamp, user_id, actor_name, ip_address, new_data, old_data, app_users(name)",
           )
           .eq("warehouse_id", id)
           .order("timestamp", { ascending: false })
@@ -196,7 +199,9 @@ export async function GET(
               timestamp: row.timestamp,
               user_id: row.user_id,
               user_name:
-                (row.app_users as { name: string } | null)?.name ?? null,
+                row.actor_name ??
+                (row.app_users as { name: string } | null)?.name ??
+                null,
               ip_address: row.ip_address,
               new_data: row.new_data,
               old_data: row.old_data,

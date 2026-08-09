@@ -340,6 +340,18 @@ export async function DELETE(request: Request) {
       }
     }
 
+    // Write audit before delete so actor_name trigger can also snapshot the
+    // removed user's historical rows, and remove_user keeps full old_data.
+    await writeAudit(supabase, {
+      warehouseId: user.warehouseId,
+      userId: user.userId,
+      actorName: user.name,
+      entity: "user",
+      entityId: targetUserId,
+      action: "remove_user",
+      oldData: existing as unknown as Record<string, unknown>,
+    }, request);
+
     const { error } = await supabase
       .from("app_users")
       .delete()
@@ -348,15 +360,6 @@ export async function DELETE(request: Request) {
     if (error) throw error;
 
     await supabase.auth.admin.deleteUser(targetUserId);
-
-    await writeAudit(supabase, {
-      warehouseId: user.warehouseId,
-      userId: user.userId,
-      entity: "user",
-      entityId: targetUserId,
-      action: "remove_user",
-      oldData: existing as unknown as Record<string, unknown>,
-    }, request);
 
     return Response.json({ message: "User removed." });
   } catch (error) {

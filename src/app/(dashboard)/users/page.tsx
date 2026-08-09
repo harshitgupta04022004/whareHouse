@@ -11,6 +11,46 @@ interface AppUser {
   email: string;
   role: string;
   created_at: string;
+  invite_status?: "pending" | "accepted";
+  invited_at?: string | null;
+  last_seen_at?: string | null;
+  is_online?: boolean;
+  presence?: "pending" | "active" | "inactive";
+}
+
+function PresenceBadge({ user: row }: { user: AppUser }) {
+  const presence =
+    row.presence ??
+    (row.invite_status === "pending"
+      ? "pending"
+      : row.is_online
+        ? "active"
+        : "inactive");
+
+  if (presence === "pending") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+        Pending invite
+      </span>
+    );
+  }
+
+  if (presence === "active") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-green-500/15 px-2 py-0.5 text-[10px] font-semibold text-green-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+        Active
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-ink-faint">
+      <span className="h-1.5 w-1.5 rounded-full bg-ink-faint" />
+      Inactive
+    </span>
+  );
 }
 
 export default function UsersPage() {
@@ -30,18 +70,22 @@ export default function UsersPage() {
       router.replace("/challans");
       return;
     }
-    fetchUsers();
+    void fetchUsers();
+    const intervalId = window.setInterval(() => {
+      void fetchUsers(true);
+    }, 30_000);
+    return () => window.clearInterval(intervalId);
   }, [user, router]);
 
-  async function fetchUsers() {
-    setLoading(true);
+  async function fetchUsers(silent = false) {
+    if (!silent) setLoading(true);
     try {
       const result = await listUsers();
       setUsers(result.data);
     } catch (err) {
       console.error("Failed to fetch users:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -50,13 +94,17 @@ export default function UsersPage() {
     setError("");
     setSuccess("");
     try {
-      const result = await inviteUser({ email: inviteEmail, name: inviteName, role: inviteRole });
+      const result = await inviteUser({
+        email: inviteEmail,
+        name: inviteName,
+        role: inviteRole,
+      });
       setSuccess(result.message || "User invited successfully.");
       setInviteEmail("");
       setInviteName("");
       setInviteRole("staff");
       setShowInvite(false);
-      fetchUsers();
+      void fetchUsers();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to invite user");
     }
@@ -66,7 +114,7 @@ export default function UsersPage() {
     try {
       await updateUserRole(userId, newRole);
       setUsers((prev) =>
-        prev.map((u) => (u.user_id === userId ? { ...u, role: newRole } : u))
+        prev.map((u) => (u.user_id === userId ? { ...u, role: newRole } : u)),
       );
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to update role");
@@ -92,7 +140,10 @@ export default function UsersPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-[12px] text-ink-faint mb-6">
-        <span className="hover:text-ink-soft cursor-pointer transition-colors" onClick={() => router.push("/challans")}>
+        <span
+          className="hover:text-ink-soft cursor-pointer transition-colors"
+          onClick={() => router.push("/challans")}
+        >
           DOs
         </span>
         <span className="mx-2">/</span>
@@ -106,7 +157,8 @@ export default function UsersPage() {
         Invite team members and manage roles.
       </p>
       <p className="text-[11px] sm:text-[12px] text-ink-faint mb-6 sm:mb-8">
-        Roles control what each user can do: staff can create DOs, managers can edit, admins manage users.
+        Active = online now · Inactive = offline · Pending invite stays red until
+        they accept and sign in.
       </p>
 
       <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
@@ -115,11 +167,25 @@ export default function UsersPage() {
             Users ({users.length})
           </span>
           <button
-            onClick={() => { setShowInvite(true); setSuccess(""); setError(""); }}
+            onClick={() => {
+              setShowInvite(true);
+              setSuccess("");
+              setError("");
+            }}
             className="flex items-center gap-1 text-[12px] font-semibold text-brand hover:text-brand-hover transition-colors"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             Invite user
           </button>
@@ -169,7 +235,10 @@ export default function UsersPage() {
                 Invite
               </button>
               <button
-                onClick={() => { setShowInvite(false); setError(""); }}
+                onClick={() => {
+                  setShowInvite(false);
+                  setError("");
+                }}
                 className="h-9 px-3 text-[12px] font-medium text-ink-faint hover:text-ink transition-colors"
               >
                 Cancel
@@ -185,64 +254,111 @@ export default function UsersPage() {
           </div>
         ) : (
           <div className="divide-y divide-border/50">
-            {users.map((u) => (
-              <div
-                key={u.user_id}
-                className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors group"
-              >
-                <button
-                  type="button"
-                  onClick={() => router.push(`/users/${u.user_id}`)}
-                  className="flex items-center gap-3 min-w-0 text-left flex-1"
+            {users.map((u) => {
+              const isPending =
+                u.presence === "pending" || u.invite_status === "pending";
+              const isActive = u.presence === "active" || u.is_online;
+              return (
+                <div
+                  key={u.user_id}
+                  className={`flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors group ${
+                    isPending ? "bg-red-500/[0.04]" : ""
+                  }`}
                 >
-                  <div className="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-[11px] font-semibold text-brand-ink shrink-0">
-                    {u.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-medium text-ink truncate group-hover:text-brand transition-colors">
-                      {u.name}
-                    </div>
-                    <div className="text-[11px] text-ink-faint truncate">{u.email}</div>
-                  </div>
-                </button>
-                <div className="flex items-center gap-2 shrink-0 ml-2">
-                  <select
-                    value={u.role}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => handleRoleChange(u.user_id, e.target.value)}
-                    className={`h-7 rounded-lg border border-border bg-transparent px-2 text-[11px] font-semibold transition-colors appearance-none cursor-pointer ${roleColors[u.role] || ""}`}
-                  >
-                    <option value="staff">Staff</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  {u.user_id !== user?.id && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemove(u.user_id);
-                      }}
-                      className="p-1 text-ink-faint hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                      title="Remove user"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => router.push(`/users/${u.user_id}`)}
-                    className="p-1 text-ink-faint hover:text-ink transition-colors"
-                    title="View details"
+                    className="flex items-center gap-3 min-w-0 text-left flex-1"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
+                    <div className="relative shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-[11px] font-semibold text-brand-ink">
+                        {u.name
+                          .split(" ")
+                          .map((w) => w[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </div>
+                      <span
+                        className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface ${
+                          isPending
+                            ? "bg-red-400"
+                            : isActive
+                              ? "bg-green-400"
+                              : "bg-ink-faint"
+                        }`}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[13px] font-medium text-ink truncate group-hover:text-brand transition-colors">
+                          {u.name}
+                        </span>
+                        <PresenceBadge user={u} />
+                      </div>
+                      <div className="text-[11px] text-ink-faint truncate">
+                        {u.email}
+                      </div>
+                    </div>
                   </button>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <select
+                      value={u.role}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => handleRoleChange(u.user_id, e.target.value)}
+                      className={`h-7 rounded-lg border border-border bg-transparent px-2 text-[11px] font-semibold transition-colors appearance-none cursor-pointer ${roleColors[u.role] || ""}`}
+                    >
+                      <option value="staff">Staff</option>
+                      <option value="manager">Manager</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    {u.user_id !== user?.id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleRemove(u.user_id);
+                        }}
+                        className="p-1 text-ink-faint hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        title="Remove user"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/users/${u.user_id}`)}
+                      className="p-1 text-ink-faint hover:text-ink transition-colors"
+                      title="View details"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

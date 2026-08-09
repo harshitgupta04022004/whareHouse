@@ -34,6 +34,7 @@ const ROUTE_POLICIES: Record<string, RoutePolicy> = {
   "GET /api/dashboard": { allowedRoles: ["admin", "manager"] },
   "GET /api/users": { allowedRoles: ["admin"] },
   "POST /api/users/invite": { allowedRoles: ["admin"] },
+  "POST /api/users/presence": { allowedRoles: ["admin", "manager", "staff"] },
   "PATCH /api/users": { allowedRoles: ["admin"] },
   "DELETE /api/users": { allowedRoles: ["admin"] },
   "GET /api/profile": { allowedRoles: ["admin", "manager", "staff"] },

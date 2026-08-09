@@ -65,6 +65,8 @@ export async function POST(request: Request) {
         name: adminName,
         email: identity.email,
         role: "admin",
+        invite_status: "accepted",
+        last_seen_at: new Date().toISOString(),
       })
       .select("user_id, email, name, role, warehouse_id")
       .single();

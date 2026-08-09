@@ -23,6 +23,27 @@ const updateUserSchema = z.object({
   role: z.enum(["admin", "manager", "staff"]).optional(),
 });
 
+const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+
+function withPresence<T extends {
+  invite_status?: string | null;
+  last_seen_at?: string | null;
+}>(row: T, nowMs: number) {
+  const inviteStatus = row.invite_status === "pending" ? "pending" : "accepted";
+  const lastSeenMs = row.last_seen_at ? Date.parse(row.last_seen_at) : NaN;
+  const isOnline =
+    inviteStatus === "accepted" &&
+    Number.isFinite(lastSeenMs) &&
+    nowMs - lastSeenMs <= ONLINE_WINDOW_MS;
+
+  return {
+    ...row,
+    invite_status: inviteStatus,
+    is_online: isOnline,
+    presence: inviteStatus === "pending" ? "pending" : isOnline ? "active" : "inactive",
+  };
+}
+
 /**
  * GET /api/users
  * List all users in the warehouse (admin only).
@@ -35,13 +56,14 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const userId = url.searchParams.get("id");
+    const nowMs = Date.now();
 
     const supabase = createServiceClient();
 
     if (userId) {
       const { data, error } = await supabase
         .from("app_users")
-        .select("user_id, name, email, role, created_at")
+        .select("user_id, name, email, role, created_at, invite_status, invited_at, last_seen_at")
         .eq("warehouse_id", user.warehouseId)
         .eq("user_id", userId)
         .maybeSingle();
@@ -49,18 +71,20 @@ export async function GET(request: Request) {
       if (error) throw error;
       if (!data) throw new ValidationError("id", "User not found in this warehouse");
 
-      return Response.json({ user: data, data });
+      const enriched = withPresence(data, nowMs);
+      return Response.json({ user: enriched, data: enriched });
     }
 
     const { data, error } = await supabase
       .from("app_users")
-      .select("user_id, name, email, role, created_at")
+      .select("user_id, name, email, role, created_at, invite_status, invited_at, last_seen_at")
       .eq("warehouse_id", user.warehouseId)
       .order("name");
 
     if (error) throw error;
 
-    return Response.json({ users: data ?? [], data: data ?? [] });
+    const enriched = (data ?? []).map((row) => withPresence(row, nowMs));
+    return Response.json({ users: enriched, data: enriched });
   } catch (error) {
     return handleApiError(error);
   }
@@ -165,6 +189,9 @@ export async function POST(request: Request) {
       name,
       email,
       role,
+      invite_status: "pending",
+      invited_at: new Date().toISOString(),
+      last_seen_at: null,
     });
 
     if (insertError) {

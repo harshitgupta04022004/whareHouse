@@ -193,6 +193,10 @@ export async function removeUser(userId: string) {
   return authedFetch(`/users?id=${userId}`, { method: "DELETE" });
 }
 
+export async function pingUserPresence() {
+  return authedFetch("/users/presence", { method: "POST" });
+}
+
 // ─── Audit ────────────────────────────────────────────────────────
 
 export async function listAuditLog(params: {

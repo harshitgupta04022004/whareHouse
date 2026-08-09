@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { getSupabase } from "@/lib/supabase-browser";
-import { logLoginAudit, logLogoutAudit } from "@/lib/api-client";
+import { logLoginAudit, logLogoutAudit, pingUserPresence } from "@/lib/api-client";
 import type { Session } from "@supabase/supabase-js";
 
 export interface AppUser {
@@ -84,6 +84,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, [supabase, resolveAppUser]);
+
+  // Keep presence Active while this tab is open; also mark invite accepted.
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    const beat = () => {
+      if (cancelled || document.visibilityState === "hidden") return;
+      pingUserPresence().catch(() => {});
+    };
+
+    beat();
+    const intervalId = window.setInterval(beat, 45_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") beat();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [user]);
 
   const refreshUser = useCallback(async () => {
     const { data } = await supabase.auth.getSession();

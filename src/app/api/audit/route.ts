@@ -16,6 +16,7 @@ export async function GET(request: Request) {
     const offset = Math.max(parseInt(url.searchParams.get("offset") ?? "0", 10), 0);
     const entity = url.searchParams.get("entity");
     const action = url.searchParams.get("action");
+    const userId = url.searchParams.get("userId");
 
     const supabase = createServiceClient();
 
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
 
     if (entity) query = query.eq("entity", entity);
     if (action) query = query.eq("action", action);
+    if (userId) query = query.eq("user_id", userId);
 
     const { data, error, count } = await query;
     if (error) throw error;

@@ -50,6 +50,7 @@ export interface DOListParams {
   to?: string;
   direction?: "IN" | "OUT";
   search?: string;
+  userId?: string;
 }
 
 export async function listDOs(params: DOListParams = {}) {
@@ -60,6 +61,7 @@ export async function listDOs(params: DOListParams = {}) {
   if (params.to) qs.set("to", params.to);
   if (params.direction) qs.set("direction", params.direction);
   if (params.search) qs.set("search", params.search);
+  if (params.userId) qs.set("userId", params.userId);
 
   return authedFetch(`/do?${qs.toString()}`);
 }
@@ -183,13 +185,24 @@ export async function removeUser(userId: string) {
 
 // ─── Audit ────────────────────────────────────────────────────────
 
-export async function listAuditLog(params: { cursor?: string; limit?: number; action?: string; entity?: string } = {}) {
+export async function listAuditLog(params: {
+  cursor?: string;
+  limit?: number;
+  action?: string;
+  entity?: string;
+  userId?: string;
+} = {}) {
   const qs = new URLSearchParams();
   if (params.cursor) qs.set("offset", params.cursor);
   if (params.limit) qs.set("limit", String(params.limit));
   if (params.action) qs.set("action", params.action);
   if (params.entity) qs.set("entity", params.entity);
+  if (params.userId) qs.set("userId", params.userId);
   return authedFetch(`/audit?${qs.toString()}`);
+}
+
+export async function getUser(userId: string) {
+  return authedFetch(`/users?id=${encodeURIComponent(userId)}`);
 }
 
 export async function verifyAuditIntegrity() {

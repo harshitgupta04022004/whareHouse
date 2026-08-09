@@ -190,18 +190,25 @@ export default function UsersPage() {
                 key={u.user_id}
                 className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors group"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-[11px] font-semibold text-brand-ink">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/users/${u.user_id}`)}
+                  className="flex items-center gap-3 min-w-0 text-left flex-1"
+                >
+                  <div className="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-[11px] font-semibold text-brand-ink shrink-0">
                     {u.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
                   </div>
-                  <div>
-                    <div className="text-[13px] font-medium text-ink">{u.name}</div>
-                    <div className="text-[11px] text-ink-faint">{u.email}</div>
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium text-ink truncate group-hover:text-brand transition-colors">
+                      {u.name}
+                    </div>
+                    <div className="text-[11px] text-ink-faint truncate">{u.email}</div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
+                </button>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
                   <select
                     value={u.role}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => handleRoleChange(u.user_id, e.target.value)}
                     className={`h-7 rounded-lg border border-border bg-transparent px-2 text-[11px] font-semibold transition-colors appearance-none cursor-pointer ${roleColors[u.role] || ""}`}
                   >
@@ -211,7 +218,10 @@ export default function UsersPage() {
                   </select>
                   {u.user_id !== user?.id && (
                     <button
-                      onClick={() => handleRemove(u.user_id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemove(u.user_id);
+                      }}
                       className="p-1 text-ink-faint hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                       title="Remove user"
                     >
@@ -220,6 +230,16 @@ export default function UsersPage() {
                       </svg>
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/users/${u.user_id}`)}
+                    className="p-1 text-ink-faint hover:text-ink transition-colors"
+                    title="View details"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             ))}

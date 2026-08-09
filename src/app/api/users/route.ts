@@ -26,13 +26,32 @@ const updateUserSchema = z.object({
 /**
  * GET /api/users
  * List all users in the warehouse (admin only).
+ * Optional ?id=<uuid> returns a single user.
  */
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
     await checkRouteAccess(ROUTE_KEY_GET, user);
 
+    const url = new URL(request.url);
+    const userId = url.searchParams.get("id");
+
     const supabase = createServiceClient();
+
+    if (userId) {
+      const { data, error } = await supabase
+        .from("app_users")
+        .select("user_id, name, email, role, created_at")
+        .eq("warehouse_id", user.warehouseId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) throw new ValidationError("id", "User not found in this warehouse");
+
+      return Response.json({ user: data, data });
+    }
+
     const { data, error } = await supabase
       .from("app_users")
       .select("user_id, name, email, role, created_at")

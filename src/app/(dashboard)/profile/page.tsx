@@ -58,14 +58,6 @@ const actionColors: Record<string, string> = {
   logout: "bg-yellow-500/15 text-yellow-400",
 };
 
-const actionColors: Record<string, string> = {
-  create: "bg-green-500/15 text-green-400",
-  update: "bg-blue-500/15 text-blue-400",
-  delete: "bg-red-500/15 text-red-400",
-  login: "bg-purple-500/15 text-purple-400",
-  logout: "bg-yellow-500/15 text-yellow-400",
-};
-
 type RoleKey = "admin" | "manager" | "staff";
 
 type PermissionRow = {

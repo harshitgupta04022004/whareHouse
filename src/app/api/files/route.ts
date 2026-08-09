@@ -1,9 +1,15 @@
+import { randomUUID } from "crypto";
 import { requireAuth, getClientIp, getUserAgent } from "@/lib/auth";
 import { assertDoOwnership, checkRouteAccess } from "@/lib/rbac";
 import { AppError, handleApiError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createServiceClient } from "@/lib/supabase";
 import { writeAudit } from "@/lib/audit";
-import { validateFile, getFolderPath, uploadToDrive, deleteFromDrive, isDriveConfigured } from "@/lib/drive";
+import { validateFile } from "@/lib/drive";
+import {
+  isStorageConfigured,
+  removeStoredDocument,
+  storeDocument,
+} from "@/lib/storage";
 
 const ROUTE_KEY_GET = "GET /api/files";
 const ROUTE_KEY_POST = "POST /api/files/upload";
@@ -22,6 +28,9 @@ export async function POST(request: Request) {
 
     if (!file) throw new ValidationError("file", "File is required");
     if (!category) throw new ValidationError("category", "Category is required");
+    if (description && description.length > 250) {
+      throw new ValidationError("description", "Must be 250 characters or less");
+    }
 
     const validCategories = ["document", "report", "do_pdf", "template", "rate_list", "contact", "backup", "other"];
     if (!validCategories.includes(category)) throw new ValidationError("category", "Invalid category");
@@ -29,7 +38,7 @@ export async function POST(request: Request) {
     const validation = validateFile(file);
     if (!validation.valid) throw new ValidationError("file", validation.error!);
 
-    if (!(await isDriveConfigured(user.warehouseId))) {
+    if (!(await isStorageConfigured(user.warehouseId))) {
       throw new AppError(
         "drive_not_configured",
         "Google Drive is not configured. Ask an admin to check the server environment variables.",
@@ -38,39 +47,39 @@ export async function POST(request: Request) {
     }
 
     const supabase = createServiceClient();
-    let doNumber: string | undefined;
     if (doId) {
       const { data: doRow, error: doError } = await supabase
         .from("delivery_orders")
-        .select("do_id, do_number, user_id")
+        .select("do_id, user_id")
         .eq("do_id", doId)
         .eq("warehouse_id", user.warehouseId)
         .single();
       if (doError || !doRow) throw new NotFoundError("Delivery order");
       assertDoOwnership(doRow.user_id, user);
-      doNumber = doRow.do_number;
     }
 
-    const folderPath = getFolderPath(category, user.name, doNumber);
-    const uploaded = await uploadToDrive(
+    const fileId = randomUUID();
+    const stored = await storeDocument({
       file,
-      folderPath,
-      file.name,
-      user.warehouseId,
-    );
+      fileId,
+      warehouseId: user.warehouseId,
+      warehouseName: user.warehouseName,
+      userName: user.name,
+    });
 
     const { data, error } = await supabase
       .from("files")
       .insert({
+        file_id: fileId,
         warehouse_id: user.warehouseId,
         user_id: user.userId,
         do_id: doId ?? null,
         file_name: file.name,
         file_type: file.type,
         file_size: file.size,
-        drive_file_id: uploaded.fileId,
-        drive_url: uploaded.url,
-        folder_path: folderPath,
+        drive_file_id: stored.key,
+        drive_url: stored.url,
+        folder_path: stored.folderPath,
         category,
         description: description ?? null,
       })
@@ -79,7 +88,11 @@ export async function POST(request: Request) {
 
     if (error) {
       try {
-        await deleteFromDrive(uploaded.fileId, user.warehouseId);
+        await removeStoredDocument({
+          provider: stored.provider,
+          key: stored.key,
+          warehouseId: user.warehouseId,
+        });
       } catch (cleanupError) {
         console.error("Drive cleanup after database failure failed:", cleanupError);
       }
@@ -89,16 +102,25 @@ export async function POST(request: Request) {
     await writeAudit(supabase, {
       warehouseId: user.warehouseId, userId: user.userId,
       entity: "file", entityId: data.file_id, action: "upload_file",
-      newData: { file_name: file.name, file_type: file.type, file_size: file.size, category, do_id: doId },
+      newData: {
+        file_name: file.name,
+        stored_file_name: stored.storedFileName,
+        file_type: file.type,
+        file_size: file.size,
+        category,
+        do_id: doId,
+        storage_provider: stored.provider,
+        folder_path: stored.folderPath,
+      },
       ipAddress: getClientIp(request), userAgent: getUserAgent(request),
     });
 
     return Response.json(
       {
         file_id: data.file_id,
-        drive_url: uploaded.url,
-        folder_path: folderPath,
-        storage: "google_drive",
+        drive_url: stored.url,
+        folder_path: stored.folderPath,
+        storage: stored.provider,
         message: "File uploaded to Google Drive.",
       },
       { status: 201 },
@@ -116,12 +138,14 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const doId = url.searchParams.get("do_id");
     const category = url.searchParams.get("category");
+    const standalone = url.searchParams.get("standalone") === "true";
 
     const supabase = createServiceClient();
     let query = supabase.from("files").select("*").eq("warehouse_id", user.warehouseId).order("created_at", { ascending: false });
 
     if (user.role === "staff") query = query.eq("user_id", user.userId);
     if (doId) query = query.eq("do_id", doId);
+    if (standalone) query = query.is("do_id", null);
     if (category) query = query.eq("category", category);
 
     const { data, error } = await query;
@@ -152,7 +176,11 @@ export async function DELETE(request: Request) {
     if (!existing) throw new ValidationError("id", "File not found");
 
     try {
-      await deleteFromDrive(existing.drive_file_id, user.warehouseId);
+      await removeStoredDocument({
+        provider: "google_drive",
+        key: existing.drive_file_id,
+        warehouseId: user.warehouseId,
+      });
     } catch (driveError) {
       console.error("Drive delete failed (DB delete proceeds):", driveError);
     }

@@ -74,6 +74,16 @@ export default function Navbar() {
               >
                 Parties
               </Link>
+              <Link
+                href="/documents"
+                className={`px-3 py-1.5 rounded-[9px] text-[13px] font-medium transition-colors ${
+                  isActive("/documents")
+                    ? "bg-white/10 text-ink"
+                    : "text-ink-soft hover:text-ink hover:bg-white/5"
+                }`}
+              >
+                Documents
+              </Link>
               {(user?.role === "admin" || user?.role === "manager") && (
                 <Link
                   href="/dashboard"
@@ -208,6 +218,16 @@ export default function Navbar() {
             }`}
           >
             Parties
+          </Link>
+          <Link
+            href="/documents"
+            className={`shrink-0 px-3 py-1.5 rounded-[9px] text-[12px] font-medium transition-colors ${
+              isActive("/documents")
+                ? "bg-white/10 text-ink"
+                : "text-ink-soft hover:text-ink hover:bg-white/5"
+            }`}
+          >
+            Documents
           </Link>
           {(user?.role === "admin" || user?.role === "manager") && (
             <Link

@@ -265,6 +265,31 @@ export async function deleteFile(id: string) {
   return authedFetch(`/files?id=${id}`, { method: "DELETE" });
 }
 
+export interface StoredFile {
+  file_id: string;
+  user_id: string | null;
+  do_id: string | null;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  drive_url: string;
+  folder_path: string;
+  category: string;
+  description: string | null;
+  created_at: string;
+}
+
+export async function listFiles(options?: {
+  category?: string;
+  standalone?: boolean;
+}): Promise<{ files: StoredFile[] }> {
+  const params = new URLSearchParams();
+  if (options?.category) params.set("category", options.category);
+  if (options?.standalone) params.set("standalone", "true");
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+  return authedFetch(`/files${query}`);
+}
+
 // ─── Google Drive integration ─────────────────────────────────────
 
 export interface DriveIntegrationStatus {

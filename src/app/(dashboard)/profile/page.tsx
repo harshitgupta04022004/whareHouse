@@ -127,8 +127,8 @@ const PERMISSION_ROWS: PermissionRow[] = [
     staff: false,
   },
   {
-    featureEn: "Upload DO files",
-    featureHi: "DO फ़ाइल अपलोड",
+    featureEn: "Upload DO & custom documents",
+    featureHi: "DO और कस्टम दस्तावेज़ अपलोड",
     admin: true,
     manager: true,
     staff: true,

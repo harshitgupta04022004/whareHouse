@@ -23,7 +23,24 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "text/csv",
+  "text/plain",
+  "application/msword",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+
+const ALLOWED_EXTENSIONS = new Set([
+  "pdf",
+  "jpg",
+  "jpeg",
+  "png",
+  "csv",
+  "xls",
+  "xlsx",
+  "doc",
+  "docx",
+  "txt",
 ]);
 
 // Keep uploads below Vercel's request body limit. Larger files should use a
@@ -33,31 +50,17 @@ const MAX_FILE_SIZE = 4 * 1024 * 1024;
 export function validateFile(file: File): { valid: boolean; error?: string } {
   if (file.size === 0) return { valid: false, error: "Empty file not allowed" };
   if (file.size > MAX_FILE_SIZE) return { valid: false, error: "File too large (max 4 MB)" };
-  if (!ALLOWED_MIME_TYPES.has(file.type)) return { valid: false, error: `File type not allowed: ${file.type}` };
-  return { valid: true };
-}
-
-export function getFolderPath(category: string, userName: string, doNumber?: string): string {
-  const safeUserName = sanitizeFolderName(userName);
-  const safeDoNumber = doNumber ? sanitizeFolderName(doNumber) : undefined;
-  switch (category) {
-    case "document": return `Documents/${safeUserName}/${safeDoNumber ?? "general"}/`;
-    case "report": return "Reports/";
-    case "do_pdf": return "DOs/";
-    case "template": return "Shared/Templates/";
-    case "rate_list": return "Shared/Rate Lists/";
-    case "contact": return "Shared/Contacts/";
-    case "backup": return "Backups/";
-    default: return `Documents/${safeUserName}/`;
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  if (
+    !ALLOWED_MIME_TYPES.has(file.type) &&
+    !ALLOWED_EXTENSIONS.has(extension)
+  ) {
+    return {
+      valid: false,
+      error: `File type not allowed: ${file.type || extension || "unknown"}`,
+    };
   }
-}
-
-function sanitizeFolderName(value: string): string {
-  return value
-    .replace(/[\\/]/g, "-")
-    .replace(/[\u0000-\u001f]/g, "")
-    .trim()
-    .slice(0, 120) || "unknown";
+  return { valid: true };
 }
 
 function escapeDriveQueryValue(value: string): string {

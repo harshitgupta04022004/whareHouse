@@ -293,7 +293,137 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* New insight strip */}
+      {/* Product matrix — shown first */}
+      <div className="mb-2">
+        <h2 className="text-[13px] font-semibold text-ink">
+          Product matrix / उत्पाद मैट्रिक्स
+        </h2>
+        <p className="text-[11px] text-ink-faint">
+          IN/OUT/Remaining stock check by product.
+        </p>
+      </div>
+
+      {error ? (
+        <div className="rounded-[var(--radius-card)] border border-red-500/20 bg-red-500/5 p-6 text-center mb-6">
+          <p className="text-[13px] text-red-400 mb-3">{error}</p>
+          <button onClick={fetchData} className="text-[13px] font-semibold text-brand hover:underline">
+            Retry / पुनः प्रयास
+          </button>
+        </div>
+      ) : loading ? (
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-12 text-center mb-6">
+          <div className="w-6 h-6 border-2 border-brand/30 border-t-brand rounded-full animate-spin mx-auto" />
+          <p className="text-[13px] text-ink-faint mt-3">
+            Loading inventory... / इन्वेंटरी लोड हो रही है...
+          </p>
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-12 text-center mb-6">
+          <p className="text-[13px] text-ink-faint">
+            No inventory movements in this period. / इस अवधि में कोई इन्वेंटरी आवाजाही नहीं।
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden mb-6">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                    Product / उत्पाद
+                  </th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                    Bag Size / बोरी आकार
+                  </th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">
+                    IN (bags) / आना (बोरी)
+                  </th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">
+                    IN (kg)
+                  </th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">
+                    OUT (bags) / जाना (बोरी)
+                  </th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">
+                    OUT (kg)
+                  </th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                    Remaining / शेष
+                  </th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
+                    Bags Left / बोरी शेष
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr
+                    key={r.item_id}
+                    className="border-b border-border/50 last:border-0 hover:bg-white/[0.02] transition-colors"
+                  >
+                    <td className="px-4 py-3 text-[13px] font-medium text-ink">{r.product}</td>
+                    <td className="px-4 py-3 text-[13px] text-ink-soft text-right">{r.bag_size} kg</td>
+                    <td className="px-4 py-3 text-[13px] text-green-400 text-right font-medium">
+                      {r.in_bags.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-green-400/80 text-right">
+                      {r.in_kg.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-orange-400 text-right font-medium">
+                      {r.out_bags.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-orange-400/80 text-right">
+                      {r.out_kg.toLocaleString()}
+                    </td>
+                    <td
+                      className={`px-4 py-3 text-[13px] text-right font-semibold ${
+                        r.remaining > 0
+                          ? "text-ink"
+                          : r.remaining < 0
+                            ? "text-red-400"
+                            : "text-ink-faint"
+                      }`}
+                    >
+                      {r.remaining.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-ink-soft text-right">
+                      {r.remaining_bags.toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-border bg-white/[0.02]">
+                  <td className="px-4 py-3 text-[13px] font-bold text-ink">
+                    Total / कुल ({rows.length} items / उत्पाद)
+                  </td>
+                  <td className="px-4 py-3"></td>
+                  <td className="px-4 py-3 text-[13px] text-green-400 text-right font-bold">
+                    {totals.totalInBags.toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-[13px] text-green-400/80 text-right font-bold">
+                    {totals.totalInKg.toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-[13px] text-orange-400 text-right font-bold">
+                    {totals.totalOutBags.toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-[13px] text-orange-400/80 text-right font-bold">
+                    {totals.totalOutKg.toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-[13px] text-ink text-right font-bold">
+                    {totals.totalRemaining.toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-[13px] text-ink-soft text-right font-bold">
+                    {totals.totalRemainingBags.toLocaleString()}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Insights below product matrix */}
       {insights && !loading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
           <div className="rounded-[12px] border border-border bg-surface px-3 py-3">
@@ -580,135 +710,6 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Existing product matrix table — kept */}
-      <div className="mb-2">
-        <h2 className="text-[13px] font-semibold text-ink">
-          Product matrix / उत्पाद मैट्रिक्स
-        </h2>
-        <p className="text-[11px] text-ink-faint">
-          Same IN/OUT/Remaining view you already use for stock checks.
-        </p>
-      </div>
-
-      {error ? (
-        <div className="rounded-[var(--radius-card)] border border-red-500/20 bg-red-500/5 p-6 text-center">
-          <p className="text-[13px] text-red-400 mb-3">{error}</p>
-          <button onClick={fetchData} className="text-[13px] font-semibold text-brand hover:underline">
-            Retry / पुनः प्रयास
-          </button>
-        </div>
-      ) : loading ? (
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-12 text-center">
-          <div className="w-6 h-6 border-2 border-brand/30 border-t-brand rounded-full animate-spin mx-auto" />
-          <p className="text-[13px] text-ink-faint mt-3">
-            Loading inventory... / इन्वेंटरी लोड हो रही है...
-          </p>
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-12 text-center">
-          <p className="text-[13px] text-ink-faint">
-            No inventory movements in this period. / इस अवधि में कोई इन्वेंटरी आवाजाही नहीं।
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
-                    Product / उत्पाद
-                  </th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
-                    Bag Size / बोरी आकार
-                  </th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">
-                    IN (bags) / आना (बोरी)
-                  </th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">
-                    IN (kg)
-                  </th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">
-                    OUT (bags) / जाना (बोरी)
-                  </th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">
-                    OUT (kg)
-                  </th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
-                    Remaining / शेष
-                  </th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">
-                    Bags Left / बोरी शेष
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr
-                    key={r.item_id}
-                    className="border-b border-border/50 last:border-0 hover:bg-white/[0.02] transition-colors"
-                  >
-                    <td className="px-4 py-3 text-[13px] font-medium text-ink">{r.product}</td>
-                    <td className="px-4 py-3 text-[13px] text-ink-soft text-right">{r.bag_size} kg</td>
-                    <td className="px-4 py-3 text-[13px] text-green-400 text-right font-medium">
-                      {r.in_bags.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-[13px] text-green-400/80 text-right">
-                      {r.in_kg.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-[13px] text-orange-400 text-right font-medium">
-                      {r.out_bags.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-[13px] text-orange-400/80 text-right">
-                      {r.out_kg.toLocaleString()}
-                    </td>
-                    <td
-                      className={`px-4 py-3 text-[13px] text-right font-semibold ${
-                        r.remaining > 0
-                          ? "text-ink"
-                          : r.remaining < 0
-                            ? "text-red-400"
-                            : "text-ink-faint"
-                      }`}
-                    >
-                      {r.remaining.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-[13px] text-ink-soft text-right">
-                      {r.remaining_bags.toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-border bg-white/[0.02]">
-                  <td className="px-4 py-3 text-[13px] font-bold text-ink">
-                    Total / कुल ({rows.length} items / उत्पाद)
-                  </td>
-                  <td className="px-4 py-3"></td>
-                  <td className="px-4 py-3 text-[13px] text-green-400 text-right font-bold">
-                    {totals.totalInBags.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-[13px] text-green-400/80 text-right font-bold">
-                    {totals.totalInKg.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-[13px] text-orange-400 text-right font-bold">
-                    {totals.totalOutBags.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-[13px] text-orange-400/80 text-right font-bold">
-                    {totals.totalOutKg.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-[13px] text-ink text-right font-bold">
-                    {totals.totalRemaining.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-[13px] text-ink-soft text-right font-bold">
-                    {totals.totalRemainingBags.toLocaleString()}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -65,19 +65,8 @@ export async function writeAudit(
 ): Promise<void> {
   const timestamp = new Date().toISOString();
 
-  // Fetch the previous hash (latest entry for this warehouse)
-  const { data: prevRow } = await supabase
-    .from("audit_log")
-    .select("current_hash")
-    .eq("warehouse_id", entry.warehouseId)
-    .order("timestamp", { ascending: false })
-    .order("log_id", { ascending: false })
-    .limit(1)
-    .single();
-
-  const previousHash = prevRow?.current_hash ?? null;
-
-  // Compute current hash
+  // Compute content hash first. Chain linking is done atomically in Postgres
+  // so concurrent writes cannot leave a broken previous_hash.
   const currentHash = await computeHash(
     timestamp,
     entry.userId,
@@ -87,24 +76,56 @@ export async function writeAudit(
     entry.newData ?? null,
   );
 
-  // Insert the audit row
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const auditRow: any = {
-    warehouse_id: entry.warehouseId,
-    user_id: entry.userId,
-    entity: entry.entity,
-    entity_id: entry.entityId,
-    action: entry.action,
-    old_data: entry.oldData ?? null,
-    new_data: entry.newData ?? null,
-    ip_address: entry.ipAddress ?? undefined,
-    user_agent: entry.userAgent ?? undefined,
-    session_id: entry.sessionId ?? undefined,
-    request_id: entry.requestId ?? undefined,
-    previous_hash: previousHash,
-    current_hash: currentHash,
-  };
-  await supabase.from("audit_log").insert(auditRow);
+  const { error } = await supabase.rpc("append_audit_log", {
+    p_warehouse_id: entry.warehouseId,
+    p_user_id: entry.userId,
+    p_entity: entry.entity,
+    p_entity_id: entry.entityId,
+    p_action: entry.action,
+    p_old_data: entry.oldData ?? null,
+    p_new_data: entry.newData ?? null,
+    p_ip_address: entry.ipAddress ?? null,
+    p_user_agent: entry.userAgent ?? null,
+    p_session_id: entry.sessionId ?? null,
+    p_request_id: entry.requestId ?? null,
+    p_current_hash: currentHash,
+    p_timestamp: timestamp,
+  });
+
+  if (error) {
+    // Fallback for environments that have not applied the atomic-append migration yet.
+    console.warn("append_audit_log RPC failed; falling back to direct insert:", error.message);
+
+    const { data: prevRow } = await supabase
+      .from("audit_log")
+      .select("current_hash")
+      .eq("warehouse_id", entry.warehouseId)
+      .order("timestamp", { ascending: false })
+      .order("log_id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const previousHash = prevRow?.current_hash ?? null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const auditRow: any = {
+      warehouse_id: entry.warehouseId,
+      user_id: entry.userId,
+      entity: entry.entity,
+      entity_id: entry.entityId,
+      action: entry.action,
+      old_data: entry.oldData ?? null,
+      new_data: entry.newData ?? null,
+      ip_address: entry.ipAddress ?? undefined,
+      user_agent: entry.userAgent ?? undefined,
+      session_id: entry.sessionId ?? undefined,
+      request_id: entry.requestId ?? undefined,
+      previous_hash: previousHash,
+      current_hash: currentHash,
+      timestamp,
+    };
+    const { error: insertError } = await supabase.from("audit_log").insert(auditRow);
+    if (insertError) throw insertError;
+  }
 }
 
 // ─── Integrity Verification ───────────────────────────────────────────

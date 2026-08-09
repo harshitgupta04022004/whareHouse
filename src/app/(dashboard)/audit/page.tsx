@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { listAuditLog, verifyAuditIntegrity } from "@/lib/api-client";
+import { listAuditLog, verifyAuditIntegrity, repairAuditIntegrity } from "@/lib/api-client";
 import ExportMenu from "@/components/ExportMenu";
 
 interface AuditEntry {
@@ -23,7 +23,9 @@ export default function AuditPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
+  const [repairing, setRepairing] = useState(false);
   const [integrityResult, setIntegrityResult] = useState<string | null>(null);
+  const [chainBroken, setChainBroken] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [actionFilter, setActionFilter] = useState("");
@@ -65,18 +67,48 @@ export default function AuditPage() {
     try {
       const result = await verifyAuditIntegrity();
       if (result && typeof result.ok === "boolean") {
+        setChainBroken(!result.ok);
         setIntegrityResult(
           result.ok
             ? "Audit chain integrity verified — no tampering detected."
-            : `Chain broken at log #${result.brokenAt}: ${result.message}`
+            : `Chain broken at log #${result.brokenAt}: ${result.message}`,
         );
       } else {
+        setChainBroken(false);
         setIntegrityResult("Failed to verify integrity.");
       }
     } catch {
+      setChainBroken(false);
       setIntegrityResult("Failed to verify integrity.");
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const handleRepair = async () => {
+    if (
+      !confirm(
+        "Repair audit chain links for this warehouse? Content hashes stay the same; only previous_hash links are corrected.",
+      )
+    ) {
+      return;
+    }
+    setRepairing(true);
+    setIntegrityResult(null);
+    try {
+      const result = await repairAuditIntegrity();
+      setChainBroken(!(result.verify?.ok ?? result.ok));
+      setIntegrityResult(
+        result.verify?.ok || result.ok
+          ? `${result.message ?? "Repaired."} Integrity verified.`
+          : `Repair ran, but chain is still broken: ${result.verify?.message ?? result.message}`,
+      );
+    } catch (err) {
+      setIntegrityResult(
+        err instanceof Error ? err.message : "Failed to repair audit chain.",
+      );
+    } finally {
+      setRepairing(false);
     }
   };
 
@@ -133,7 +165,7 @@ export default function AuditPage() {
           />
           <button
             onClick={handleVerify}
-            disabled={verifying}
+            disabled={verifying || repairing}
             className="inline-flex h-9 items-center gap-2 px-3 sm:px-4 text-[12px] sm:text-[13px] font-semibold border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors disabled:opacity-60"
           >
             {verifying ? (
@@ -145,11 +177,23 @@ export default function AuditPage() {
             )}
             Verify Integrity
           </button>
+          {chainBroken && (
+            <button
+              onClick={handleRepair}
+              disabled={repairing || verifying}
+              className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-brand px-3 text-[12px] font-semibold text-brand-ink transition-colors hover:bg-brand-strong disabled:opacity-60 sm:px-4 sm:text-[13px]"
+            >
+              {repairing ? (
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : null}
+              Repair Chain
+            </button>
+          )}
         </div>
       </div>
 
       {integrityResult && (
-        <div className={`mb-6 px-4 py-3 rounded-[11px] text-[13px] ${integrityResult.includes("verified") ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-red-500/10 border border-red-500/20 text-red-400"}`}>
+        <div className={`mb-6 px-4 py-3 rounded-[11px] text-[13px] ${integrityResult.toLowerCase().includes("verified") ? "bg-green-500/10 border border-green-500/20 text-green-400" : "bg-red-500/10 border border-red-500/20 text-red-400"}`}>
           {integrityResult}
         </div>
       )}

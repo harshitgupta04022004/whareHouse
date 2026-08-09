@@ -231,6 +231,10 @@ export async function verifyAuditIntegrity() {
   return authedFetch("/audit/integrity");
 }
 
+export async function repairAuditIntegrity() {
+  return authedFetch("/audit/integrity/repair", { method: "POST" });
+}
+
 export async function logLoginAudit() {
   return authedFetch("/auth/session", {
     method: "POST",

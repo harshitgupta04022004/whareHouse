@@ -464,6 +464,32 @@ export type Database = {
           message: string;
         }>;
       };
+      append_audit_log: {
+        Args: {
+          p_warehouse_id: string;
+          p_user_id: string | null;
+          p_entity: string;
+          p_entity_id: string | null;
+          p_action: string;
+          p_old_data: Record<string, unknown> | null;
+          p_new_data: Record<string, unknown> | null;
+          p_ip_address: string | null;
+          p_user_agent: string | null;
+          p_session_id: string | null;
+          p_request_id: string | null;
+          p_current_hash: string;
+          p_timestamp?: string;
+        };
+        Returns: number;
+      };
+      repair_audit_chain: {
+        Args: { p_warehouse_id: string };
+        Returns: Array<{
+          ok: boolean;
+          repaired_count: number;
+          message: string;
+        }>;
+      };
       purge_deleted_warehouses: {
         Args: { dry_run?: boolean };
         Returns: Array<{

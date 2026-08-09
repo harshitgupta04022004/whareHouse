@@ -110,10 +110,11 @@ export async function POST(request: Request) {
     await writeAudit(supabase, {
       warehouseId: user.warehouseId,
       userId: user.userId,
+      actorName: user.name,
       entity: "party",
       entityId: data.party_id,
       action: "create",
-      newData: { name: parsed.data.name },
+      newData: { party_id: data.party_id, name: parsed.data.name },
     }, request);
 
     return Response.json(
@@ -168,6 +169,7 @@ export async function PATCH(request: Request) {
     await writeAudit(supabase, {
       warehouseId: user.warehouseId,
       userId: user.userId,
+      actorName: user.name,
       entity: "party",
       entityId: party_id,
       action: "update",
@@ -216,6 +218,7 @@ export async function DELETE(request: Request) {
     await writeAudit(supabase, {
       warehouseId: user.warehouseId,
       userId: user.userId,
+      actorName: user.name,
       entity: "party",
       entityId: partyId,
       action: "delete",

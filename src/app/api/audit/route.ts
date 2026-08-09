@@ -29,7 +29,18 @@ export async function GET(request: Request) {
       .range(offset, offset + limit - 1);
 
     if (entity) query = query.eq("entity", entity);
-    if (action) query = query.eq("action", action);
+    if (action) {
+      // Include legacy action names so Create/Update filters still match older rows
+      if (action === "create") {
+        query = query.in("action", ["create", "upload_file"]);
+      } else if (action === "update") {
+        query = query.in("action", ["update", "set_bag_size", "update_user"]);
+      } else if (action === "delete") {
+        query = query.in("action", ["delete", "remove_user"]);
+      } else {
+        query = query.eq("action", action);
+      }
+    }
     // Include actions by the user AND actions targeting the user (add_user, role changes, etc.)
     if (userId) {
       query = query.or(
@@ -135,17 +146,31 @@ function targetLabelFromPayload(
   }
 
   if (entity === "party" || entity === "item") {
-    const name = typeof data.name === "string" ? data.name : null;
+    const name =
+      (typeof newData?.name === "string" && newData.name) ||
+      (typeof oldData?.name === "string" && oldData.name) ||
+      null;
+    const bagSizeRaw =
+      (typeof newData?.bag_size === "number" && newData.bag_size) ||
+      (typeof oldData?.bag_size === "number" && oldData.bag_size) ||
+      null;
     const bagSize =
-      entity === "item" && typeof data.bag_size === "number"
-        ? `${data.bag_size} kg`
-        : null;
+      entity === "item" && bagSizeRaw != null ? `${bagSizeRaw} kg` : null;
     if (name && bagSize) return `${name} · ${bagSize}`;
     return name;
   }
 
   if (entity === "file") {
-    return typeof data.file_name === "string" ? data.file_name : null;
+    const fileName =
+      (typeof newData?.file_name === "string" && newData.file_name) ||
+      (typeof oldData?.file_name === "string" && oldData.file_name) ||
+      null;
+    const category =
+      (typeof newData?.category === "string" && newData.category) ||
+      (typeof oldData?.category === "string" && oldData.category) ||
+      null;
+    if (fileName && category) return `${fileName} · ${category}`;
+    return fileName;
   }
 
   return null;

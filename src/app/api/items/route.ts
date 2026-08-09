@@ -113,10 +113,15 @@ export async function POST(request: Request) {
     await writeAudit(supabase, {
       warehouseId: user.warehouseId,
       userId: user.userId,
+      actorName: user.name,
       entity: "item",
       entityId: data.item_id,
       action: "create",
-      newData: { name: parsed.data.name, bag_size: parsed.data.bag_size },
+      newData: {
+        item_id: data.item_id,
+        name: parsed.data.name,
+        bag_size: parsed.data.bag_size,
+      },
     }, request);
 
     return Response.json(
@@ -178,17 +183,14 @@ export async function PATCH(request: Request) {
       throw error;
     }
 
-    // Determine audit action
-    const action = updates.bag_size !== undefined && updates.bag_size !== existing.bag_size
-      ? "set_bag_size"
-      : "update";
-
+    // Always log as update so Audit filters (Create / Update / Delete) stay consistent
     await writeAudit(supabase, {
       warehouseId: user.warehouseId,
       userId: user.userId,
+      actorName: user.name,
       entity: "item",
       entityId: item_id,
-      action,
+      action: "update",
       oldData: existing as unknown as Record<string, unknown>,
       newData: { ...existing, ...updateFields } as Record<string, unknown>,
     }, request);
@@ -234,6 +236,7 @@ export async function DELETE(request: Request) {
     await writeAudit(supabase, {
       warehouseId: user.warehouseId,
       userId: user.userId,
+      actorName: user.name,
       entity: "item",
       entityId: itemId,
       action: "delete",

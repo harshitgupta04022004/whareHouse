@@ -123,11 +123,31 @@ export default function AuditPage() {
 
   const actionColors: Record<string, string> = {
     create: "bg-green-500/15 text-green-400",
+    upload_file: "bg-green-500/15 text-green-400",
     update: "bg-blue-500/15 text-blue-400",
+    set_bag_size: "bg-blue-500/15 text-blue-400",
     delete: "bg-red-500/15 text-red-400",
     login: "bg-purple-500/15 text-purple-400",
     logout: "bg-yellow-500/15 text-yellow-400",
+    add_user: "bg-blue-500/15 text-blue-400",
+    remove_user: "bg-red-500/15 text-red-400",
+    update_user: "bg-blue-500/15 text-blue-400",
   };
+
+  const entityLabels: Record<string, string> = {
+    do: "DO",
+    do_item: "DO item",
+    item: "Item",
+    party: "Party",
+    file: "Document",
+    user: "User",
+  };
+
+  function displayAction(action: string) {
+    if (action === "upload_file") return "create";
+    if (action === "set_bag_size") return "update";
+    return action;
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -165,12 +185,12 @@ export default function AuditPage() {
             rows={entries.map((e) => ({
               timestamp: e.timestamp ? new Date(e.timestamp).toLocaleString("en-IN") : "",
               user: e.actor_name ?? e.user_name ?? e.app_users?.name ?? e.user_id ?? "",
-              action: e.action,
+              action: displayAction(e.action),
               entity: e.target_name
-                ? `${e.entity} · ${e.target_name}`
+                ? `${entityLabels[e.entity] || e.entity} · ${e.target_name}`
                 : e.entity_id
-                  ? `${e.entity} (${e.entity_id})`
-                  : e.entity,
+                  ? `${entityLabels[e.entity] || e.entity} (${e.entity_id})`
+                  : entityLabels[e.entity] || e.entity,
               entity_id: e.entity_id ?? "",
               ip_address: e.ip_address ?? "",
             }))}
@@ -236,10 +256,10 @@ export default function AuditPage() {
           <option value="">All entities</option>
           <option value="do">Delivery orders</option>
           <option value="do_item">DO items</option>
-          <option value="user">Users</option>
           <option value="item">Items</option>
           <option value="party">Parties</option>
-          <option value="file">Files</option>
+          <option value="file">Documents</option>
+          <option value="user">Users</option>
         </select>
       </div>
 
@@ -282,11 +302,11 @@ export default function AuditPage() {
                       </td>
                       <td className="px-5 py-2.5">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${actionColors[entry.action] || "bg-white/5 text-ink-faint"}`}>
-                          {entry.action}
+                          {displayAction(entry.action)}
                         </span>
                       </td>
                       <td className="px-5 py-2.5 text-[12px] text-ink-soft">
-                        {entry.entity}
+                        {entityLabels[entry.entity] || entry.entity}
                         {entry.target_name ? (
                           <span className="text-ink ml-1">· {entry.target_name}</span>
                         ) : entry.entity_id ? (

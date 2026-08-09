@@ -101,13 +101,16 @@ export async function POST(request: Request) {
 
     await writeAudit(supabase, {
       warehouseId: user.warehouseId, userId: user.userId,
-      entity: "file", entityId: data.file_id, action: "upload_file",
+      actorName: user.name,
+      entity: "file", entityId: data.file_id, action: "create",
       newData: {
+        file_id: data.file_id,
         file_name: file.name,
         stored_file_name: stored.storedFileName,
         file_type: file.type,
         file_size: file.size,
         category,
+        description: description || null,
         do_id: doId,
         storage_provider: stored.provider,
         folder_path: stored.folderPath,
@@ -190,6 +193,7 @@ export async function DELETE(request: Request) {
 
     await writeAudit(supabase, {
       warehouseId: user.warehouseId, userId: user.userId,
+      actorName: user.name,
       entity: "file", entityId: fileId, action: "delete",
       oldData: existing as unknown as Record<string, unknown>,
     }, request);

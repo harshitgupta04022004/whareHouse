@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import {
+  deleteAuditAsSuperAdmin,
   getWarehouseAsSuperAdmin,
+  listAuditAsSuperAdmin,
   mutateWarehouseUserAsSuperAdmin,
 } from "@/lib/api-client";
 import { formatDate, formatWeight } from "@/lib/utils";
@@ -84,6 +86,24 @@ export default function SuperAdminWarehousePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("overview");
+  const [auditRows, setAuditRows] = useState<WarehouseDetail["audit"]>([]);
+  const [auditSelected, setAuditSelected] = useState<Set<number>>(new Set());
+  const [auditFrom, setAuditFrom] = useState("");
+  const [auditTo, setAuditTo] = useState("");
+  const [auditWorking, setAuditWorking] = useState(false);
+  const [auditMessage, setAuditMessage] = useState("");
+
+  const refreshAudit = useCallback(async () => {
+    if (!id) return;
+    const result = await listAuditAsSuperAdmin({
+      warehouseId: id,
+      from: auditFrom || undefined,
+      to: auditTo || undefined,
+      limit: 300,
+    });
+    setAuditRows(result.data ?? []);
+    setAuditSelected(new Set());
+  }, [id, auditFrom, auditTo]);
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -92,12 +112,17 @@ export default function SuperAdminWarehousePage() {
     try {
       const result = await getWarehouseAsSuperAdmin(id);
       setData(result.data);
+      if (tab === "audit") {
+        await refreshAudit();
+      } else {
+        setAuditRows(result.data?.audit ?? []);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load warehouse");
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, tab, refreshAudit]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -111,6 +136,7 @@ export default function SuperAdminWarehousePage() {
         const result = await getWarehouseAsSuperAdmin(id);
         if (cancelled) return;
         setData(result.data);
+        setAuditRows(result.data?.audit ?? []);
         setError("");
       } catch (err) {
         if (!cancelled) {
@@ -126,6 +152,13 @@ export default function SuperAdminWarehousePage() {
       cancelled = true;
     };
   }, [authLoading, isSuperAdmin, router, id]);
+
+  useEffect(() => {
+    if (!isSuperAdmin || tab !== "audit" || !id) return;
+    void refreshAudit().catch((err) => {
+      setError(err instanceof Error ? err.message : "Failed to load audit");
+    });
+  }, [isSuperAdmin, tab, id, refreshAudit]);
 
   const handleRole = async (userId: string, role: string) => {
     try {
@@ -150,6 +183,60 @@ export default function SuperAdminWarehousePage() {
       await refresh();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Remove failed");
+    }
+  };
+
+  const deleteSelectedAudit = async () => {
+    if (auditSelected.size === 0) return;
+    if (
+      !confirm(
+        `Permanently delete ${auditSelected.size} audit log(s) for this warehouse?`,
+      )
+    ) {
+      return;
+    }
+    setAuditWorking(true);
+    setAuditMessage("");
+    try {
+      const result = await deleteAuditAsSuperAdmin({
+        warehouseId: id,
+        logIds: [...auditSelected],
+      });
+      setAuditMessage(result.message ?? `Deleted ${result.deleted} log(s).`);
+      await refreshAudit();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setAuditWorking(false);
+    }
+  };
+
+  const deleteAuditRange = async () => {
+    if (!auditFrom && !auditTo) {
+      alert("Choose a from and/or to date.");
+      return;
+    }
+    if (
+      !confirm(
+        `Permanently delete audit logs from ${auditFrom || "beginning"} to ${auditTo || "now"} for this warehouse?`,
+      )
+    ) {
+      return;
+    }
+    setAuditWorking(true);
+    setAuditMessage("");
+    try {
+      const result = await deleteAuditAsSuperAdmin({
+        warehouseId: id,
+        from: auditFrom || undefined,
+        to: auditTo || undefined,
+      });
+      setAuditMessage(result.message ?? `Deleted ${result.deleted} log(s).`);
+      await refreshAudit();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Range delete failed");
+    } finally {
+      setAuditWorking(false);
     }
   };
 
@@ -372,18 +459,149 @@ export default function SuperAdminWarehousePage() {
       )}
 
       {tab === "audit" && (
-        <SimpleTable
-          headers={["When", "Actor", "Action", "Entity", "IP"]}
-          rows={data.audit.map((a) => [
-            a.timestamp.replace("T", " ").slice(0, 19),
-            a.user_name ?? (a.user_id ? a.user_id.slice(0, 8) : "System"),
-            a.action,
-            a.entity_id
-              ? `${a.entity} (${a.entity_id.slice(0, 8)}…)`
-              : a.entity,
-            a.ip_address ?? "—",
-          ])}
-        />
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end gap-2 rounded-[var(--radius-card)] border border-border bg-surface p-3">
+            <label className="text-[12px] text-ink-soft">
+              From
+              <input
+                type="date"
+                value={auditFrom}
+                onChange={(e) => setAuditFrom(e.target.value)}
+                className="mt-1 block h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink"
+              />
+            </label>
+            <label className="text-[12px] text-ink-soft">
+              To
+              <input
+                type="date"
+                value={auditTo}
+                onChange={(e) => setAuditTo(e.target.value)}
+                className="mt-1 block h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={auditWorking}
+              onClick={() => void refreshAudit()}
+              className="h-9 rounded-[9px] border border-border px-3 text-[12px] font-semibold text-ink-soft hover:bg-white/5 disabled:opacity-50"
+            >
+              Apply filter
+            </button>
+            <button
+              type="button"
+              disabled={auditWorking || (!auditFrom && !auditTo)}
+              onClick={() => void deleteAuditRange()}
+              className="h-9 rounded-[9px] border border-red-500/30 bg-red-500/10 px-3 text-[12px] font-semibold text-red-400 disabled:opacity-50"
+            >
+              Delete date range
+            </button>
+            <button
+              type="button"
+              disabled={auditWorking || auditSelected.size === 0}
+              onClick={() => void deleteSelectedAudit()}
+              className="h-9 rounded-[9px] bg-red-500/90 px-3 text-[12px] font-semibold text-white disabled:opacity-50"
+            >
+              Delete selected ({auditSelected.size})
+            </button>
+            <Link
+              href="/super-admin/audit"
+              className="h-9 inline-flex items-center text-[12px] font-semibold text-brand"
+            >
+              Manage all warehouses →
+            </Link>
+          </div>
+          {auditMessage && (
+            <p className="text-[12px] text-green-400">{auditMessage}</p>
+          )}
+          {auditRows.length === 0 ? (
+            <p className="text-[13px] text-ink-faint">No rows.</p>
+          ) : (
+            <div className="overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px]">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="px-3 py-2 text-left">
+                        <input
+                          type="checkbox"
+                          checked={
+                            auditRows.length > 0 &&
+                            auditRows.every((a) =>
+                              auditSelected.has(Number(a.log_id)),
+                            )
+                          }
+                          onChange={() => {
+                            if (
+                              auditRows.every((a) =>
+                                auditSelected.has(Number(a.log_id)),
+                              )
+                            ) {
+                              setAuditSelected(new Set());
+                            } else {
+                              setAuditSelected(
+                                new Set(auditRows.map((a) => Number(a.log_id))),
+                              );
+                            }
+                          }}
+                          aria-label="Select all"
+                        />
+                      </th>
+                      {["When", "Actor", "Action", "Entity", "IP"].map((h) => (
+                        <th
+                          key={h}
+                          className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-faint"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditRows.map((a) => (
+                      <tr
+                        key={String(a.log_id)}
+                        className="border-b border-border/50 text-[13px] text-ink"
+                      >
+                        <td className="px-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={auditSelected.has(Number(a.log_id))}
+                            onChange={() => {
+                              const idNum = Number(a.log_id);
+                              setAuditSelected((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(idNum)) next.delete(idNum);
+                                else next.add(idNum);
+                                return next;
+                              });
+                            }}
+                            aria-label={`Select ${a.log_id}`}
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-[12px] text-ink-soft">
+                          {a.timestamp.replace("T", " ").slice(0, 19)}
+                        </td>
+                        <td className="px-3 py-2 text-[12px]">
+                          {a.user_name ??
+                            (a.user_id ? a.user_id.slice(0, 8) : "System")}
+                        </td>
+                        <td className="px-3 py-2 text-[12px]">{a.action}</td>
+                        <td className="px-3 py-2 text-[12px]">
+                          {a.entity_id
+                            ? `${a.entity} (${a.entity_id.slice(0, 8)}…)`
+                            : a.entity}
+                        </td>
+                        <td className="px-3 py-2 text-[12px] text-ink-faint">
+                          {a.ip_address ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

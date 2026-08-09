@@ -162,6 +162,12 @@ export default function SuperAdminPage() {
         <p className="mt-1 text-[13px] text-ink-soft">
           View and manage every warehouse, user, and dataset across the platform.
         </p>
+        <Link
+          href="/super-admin/audit"
+          className="mt-3 inline-flex text-[13px] font-semibold text-brand hover:underline"
+        >
+          Audit log cleanup (date range / select rows) →
+        </Link>
       </div>
 
       <div className="mb-4 flex flex-col gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-4 sm:flex-row sm:items-end">

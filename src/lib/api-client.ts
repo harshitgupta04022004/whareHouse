@@ -262,6 +262,35 @@ export async function mutateWarehouseUserAsSuperAdmin(
   });
 }
 
+export async function listAuditAsSuperAdmin(params: {
+  warehouseId?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+} = {}) {
+  const qs = new URLSearchParams();
+  if (params.warehouseId) qs.set("warehouseId", params.warehouseId);
+  if (params.from) qs.set("from", params.from);
+  if (params.to) qs.set("to", params.to);
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.offset) qs.set("offset", String(params.offset));
+  return authedFetch(`/super-admin/audit?${qs.toString()}`);
+}
+
+export async function deleteAuditAsSuperAdmin(data: {
+  warehouseId?: string | "all";
+  logIds?: number[];
+  from?: string;
+  to?: string;
+}) {
+  return authedFetch("/super-admin/audit", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...data, confirm: "DELETE" }),
+  });
+}
+
 // ─── Audit ────────────────────────────────────────────────────────
 
 export async function listAuditLog(params: {

@@ -95,17 +95,60 @@ function targetLabelFromPayload(
   newData: Record<string, unknown> | null,
   oldData: Record<string, unknown> | null,
 ): string | null {
-  if (entity !== "user") return null;
-  const name =
-    (typeof newData?.name === "string" && newData.name) ||
-    (typeof oldData?.name === "string" && oldData.name) ||
-    null;
-  const email =
-    (typeof newData?.email === "string" && newData.email) ||
-    (typeof oldData?.email === "string" && oldData.email) ||
-    null;
-  if (name && email) return `${name} (${email})`;
-  return name || email || null;
+  const data = { ...(oldData ?? {}), ...(newData ?? {}) };
+
+  if (entity === "user") {
+    const name =
+      (typeof newData?.name === "string" && newData.name) ||
+      (typeof oldData?.name === "string" && oldData.name) ||
+      null;
+    const email =
+      (typeof newData?.email === "string" && newData.email) ||
+      (typeof oldData?.email === "string" && oldData.email) ||
+      null;
+    if (name && email) return `${name} (${email})`;
+    return name || email || null;
+  }
+
+  if (entity === "do") {
+    const doNumber =
+      (typeof data.do_number === "string" && data.do_number) || null;
+    const direction =
+      (typeof data.direction === "string" && data.direction) || null;
+    const date = typeof data.date === "string" ? data.date : null;
+    const parts = [doNumber, direction, date].filter(Boolean);
+    return parts.length > 0 ? parts.join(" · ") : null;
+  }
+
+  if (entity === "do_item") {
+    const doNumber =
+      (typeof data.do_number === "string" && data.do_number) || null;
+    const bags = typeof data.bags === "number" ? `${data.bags} bags` : null;
+    const vehicle =
+      (typeof data.vehicle_number === "string" && data.vehicle_number) || null;
+    const parts = [
+      doNumber ? `DO ${doNumber}` : null,
+      bags,
+      vehicle ? `veh ${vehicle}` : null,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(" · ") : null;
+  }
+
+  if (entity === "party" || entity === "item") {
+    const name = typeof data.name === "string" ? data.name : null;
+    const bagSize =
+      entity === "item" && typeof data.bag_size === "number"
+        ? `${data.bag_size} kg`
+        : null;
+    if (name && bagSize) return `${name} · ${bagSize}`;
+    return name;
+  }
+
+  if (entity === "file") {
+    return typeof data.file_name === "string" ? data.file_name : null;
+  }
+
+  return null;
 }
 
 export async function HEAD(request: Request) {

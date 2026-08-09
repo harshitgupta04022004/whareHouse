@@ -32,6 +32,7 @@ export default function AuditPage() {
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [actionFilter, setActionFilter] = useState("");
+  const [entityFilter, setEntityFilter] = useState("");
 
   useEffect(() => {
     if (!user || user.role !== "admin") {
@@ -40,7 +41,7 @@ export default function AuditPage() {
     }
     fetchEntries();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, router, actionFilter]);
+  }, [user, router, actionFilter, entityFilter]);
 
   async function fetchEntries(nextCursor?: string) {
     setLoading(true);
@@ -49,6 +50,7 @@ export default function AuditPage() {
         cursor: nextCursor,
         limit: 50,
         action: actionFilter || undefined,
+        entity: entityFilter || undefined,
       });
       if (nextCursor) {
         setEntries((prev) => [...prev, ...result.data]);
@@ -209,8 +211,8 @@ export default function AuditPage() {
         </div>
       )}
 
-      {/* Action Filter */}
-      <div className="mb-4">
+      {/* Filters */}
+      <div className="mb-4 flex flex-wrap gap-2">
         <select
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
@@ -222,6 +224,22 @@ export default function AuditPage() {
           <option value="delete">Delete</option>
           <option value="login">Login</option>
           <option value="logout">Logout</option>
+          <option value="add_user">Add user</option>
+          <option value="remove_user">Remove user</option>
+          <option value="update_user">Update user</option>
+        </select>
+        <select
+          value={entityFilter}
+          onChange={(e) => setEntityFilter(e.target.value)}
+          className="h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink transition-colors"
+        >
+          <option value="">All entities</option>
+          <option value="do">Delivery orders</option>
+          <option value="do_item">DO items</option>
+          <option value="user">Users</option>
+          <option value="item">Items</option>
+          <option value="party">Parties</option>
+          <option value="file">Files</option>
         </select>
       </div>
 

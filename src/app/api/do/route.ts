@@ -258,16 +258,27 @@ async function createDoHandler(request: Request): Promise<Response> {
     // Audit: DO creation + each item
     await writeAudit(supabase, {
       warehouseId: user.warehouseId, userId: user.userId,
+      actorName: user.name,
       entity: "do", entityId: doRow.do_id, action: "create",
-      newData: { do_number, direction, date, party_id, items: doItems },
+      newData: {
+        do_id: doRow.do_id,
+        do_number,
+        direction,
+        date,
+        party_id,
+        item_count: doItems.length,
+        items: doItems,
+      },
       requestId,
     }, request);
 
     for (const item of doItems) {
       await writeAudit(supabase, {
         warehouseId: user.warehouseId, userId: user.userId,
+        actorName: user.name,
         entity: "do_item", entityId: null, action: "create",
-        newData: { do_id: doRow.do_id, ...item }, requestId,
+        newData: { do_id: doRow.do_id, do_number, ...item },
+        requestId,
       }, request);
     }
 
@@ -348,6 +359,7 @@ export async function PATCH(request: Request) {
 
     await writeAudit(supabase, {
       warehouseId: user.warehouseId, userId: user.userId,
+      actorName: user.name,
       entity: "do", entityId: do_id, action: "update",
       oldData: existingDo as unknown as Record<string, unknown>,
       newData: updatedDo as unknown as Record<string, unknown>,
@@ -388,6 +400,7 @@ export async function DELETE(request: Request) {
 
     await writeAudit(supabase, {
       warehouseId: user.warehouseId, userId: user.userId,
+      actorName: user.name,
       entity: "do", entityId: doId, action: "delete",
       oldData: { ...(existingDo as unknown as Record<string, unknown>), items: existingItems },
     }, request);

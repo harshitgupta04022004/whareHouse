@@ -205,6 +205,18 @@ export async function getUser(userId: string) {
   return authedFetch(`/users?id=${encodeURIComponent(userId)}`);
 }
 
+export async function getProfile() {
+  return authedFetch("/profile");
+}
+
+export async function updateProfile(data: { name: string }) {
+  return authedFetch("/profile", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
 export async function verifyAuditIntegrity() {
   return authedFetch("/audit/integrity");
 }

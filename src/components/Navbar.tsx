@@ -114,7 +114,15 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {user && (
               <>
-                <div className="hidden sm:flex items-center gap-2.5">
+                <Link
+                  href="/profile"
+                  className={`hidden sm:flex items-center gap-2.5 rounded-[10px] px-2 py-1 transition-colors ${
+                    isActive("/profile")
+                      ? "bg-white/10"
+                      : "hover:bg-white/5"
+                  }`}
+                  title="Open profile"
+                >
                   <div className="w-7 h-7 rounded-full bg-brand/80 flex items-center justify-center text-[10px] font-semibold text-brand-ink">
                     {user.name
                       .split(" ")
@@ -129,7 +137,20 @@ export default function Navbar() {
                       {user.email}
                     </div>
                   </div>
-                </div>
+                </Link>
+                <Link
+                  href="/profile"
+                  className={`sm:hidden w-8 h-8 rounded-full bg-brand/80 flex items-center justify-center text-[10px] font-semibold text-brand-ink ${
+                    isActive("/profile") ? "ring-2 ring-brand/40" : ""
+                  }`}
+                  title="Profile"
+                >
+                  {user.name
+                    .split(" ")
+                    .map((w) => w[0])
+                    .join("")
+                    .slice(0, 2)}
+                </Link>
                 <button
                   onClick={signOut}
                   className="flex items-center gap-1.5 text-[12px] font-medium text-ink-faint hover:text-ink transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
@@ -222,6 +243,16 @@ export default function Navbar() {
               </Link>
             </>
           )}
+          <Link
+            href="/profile"
+            className={`shrink-0 px-3 py-1.5 rounded-[9px] text-[12px] font-medium transition-colors ${
+              isActive("/profile")
+                ? "bg-white/10 text-ink"
+                : "text-ink-soft hover:text-ink hover:bg-white/5"
+            }`}
+          >
+            Profile
+          </Link>
         </div>
       </div>
     </header>

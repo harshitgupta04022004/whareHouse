@@ -1,27 +1,33 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function HomePage() {
   const { user, session, loading, needsOnboarding } = useAuth();
   const router = useRouter();
-  const redirectedRef = useRef(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const hash = window.location.hash;
+
     // If URL has a recovery/invite token, redirect to reset-password immediately
-    // This must run BEFORE any session-based redirects
-    if (typeof window !== "undefined" && !redirectedRef.current) {
-      const hash = window.location.hash;
-      if (hash.includes("type=recovery") || hash.includes("type=invite")) {
-        redirectedRef.current = true;
+    // Use a sessionStorage flag to prevent redirect loops across page reloads
+    if (hash.includes("type=recovery") || hash.includes("type=invite")) {
+      const alreadyRedirecting = sessionStorage.getItem("resetRedirect");
+      if (!alreadyRedirecting) {
+        sessionStorage.setItem("resetRedirect", "1");
         window.location.replace("/reset-password" + hash);
         return;
       }
     }
 
-    if (loading || redirectedRef.current) return;
+    // Clear the flag once we're no longer on a recovery URL
+    sessionStorage.removeItem("resetRedirect");
+
+    if (loading) return;
 
     if (!session) {
       router.replace("/login");

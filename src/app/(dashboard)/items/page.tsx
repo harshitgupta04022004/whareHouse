@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { listItems, createItem, updateItem, deleteItem } from "@/lib/api-client";
+import ExportMenu from "@/components/ExportMenu";
 
 interface Item {
   item_id: string;
@@ -112,15 +113,30 @@ export default function ItemsPage() {
         <span className="text-ink-soft">Item list</span>
       </div>
 
-      <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
-        Item List <span className="text-[16px] sm:text-[18px] text-ink-soft font-normal">/ माल सूची</span>
-      </h1>
-      <p className="text-[12px] sm:text-[14px] text-ink-soft mb-1">
-        Manage items used in DOs — add, edit, or remove (Wheat, Sugar, etc.).
-      </p>
-      <p className="text-[11px] sm:text-[13px] text-ink-faint mb-6 sm:mb-8">
-        DO में इस्तेमाल होने वाले माल को जोड़ें, बदलें या हटाएं — गेहूं, चीनी आदि।
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6 sm:mb-8">
+        <div>
+          <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
+            Item List <span className="text-[16px] sm:text-[18px] text-ink-soft font-normal">/ माल सूची</span>
+          </h1>
+          <p className="text-[12px] sm:text-[14px] text-ink-soft mb-1">
+            Manage items used in DOs — add, edit, or remove (Wheat, Sugar, etc.).
+          </p>
+          <p className="text-[11px] sm:text-[13px] text-ink-faint">
+            DO में इस्तेमाल होने वाले माल को जोड़ें, बदलें या हटाएं — गेहूं, चीनी आदि।
+          </p>
+        </div>
+        <ExportMenu
+          filename="items"
+          title="Item List"
+          sheetName="Items"
+          columns={[
+            { key: "name", header: "Item Name" },
+            { key: "bag_size", header: "Bag Size (kg)" },
+          ]}
+          rows={items.map((i) => ({ name: i.name, bag_size: i.bag_size }))}
+          disabled={loading}
+        />
+      </div>
 
       <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">

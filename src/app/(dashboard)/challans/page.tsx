@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { listDOs, deleteDO } from "@/lib/api-client";
+import ExportMenu from "@/components/ExportMenu";
 import {
   formatWeight,
   formatDate,
@@ -109,6 +110,25 @@ export default function DOsPage() {
       ? `Showing ${formatDate(from)} - ${formatDate(to)}`
       : "";
 
+  const exportRows = useMemo(
+    () =>
+      DOs.map((d) => {
+        const bags = (d.do_items ?? []).reduce((s, i) => s + i.bags, 0);
+        const weight = (d.do_items ?? []).reduce((s, i) => s + i.total_weight, 0);
+        return {
+          do_number: d.do_number,
+          direction: d.direction,
+          date: d.date,
+          party: d.parties?.name ?? "",
+          created_by: d.app_users?.name ?? "",
+          items: d.item_count,
+          bags,
+          weight,
+        };
+      }),
+    [DOs],
+  );
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -121,7 +141,25 @@ export default function DOsPage() {
             Your deliveries &mdash; In &amp; Out, bags, weight and totals.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <ExportMenu
+            filename={`dos-${from || "all"}-${to || "all"}`}
+            title="DO Records"
+            sheetName="DOs"
+            subtitle={showingRange || undefined}
+            columns={[
+              { key: "do_number", header: "DO Number" },
+              { key: "direction", header: "Direction" },
+              { key: "date", header: "Date" },
+              { key: "party", header: "Party" },
+              { key: "created_by", header: "Created By" },
+              { key: "items", header: "Items" },
+              { key: "bags", header: "Bags" },
+              { key: "weight", header: "Weight (kg)" },
+            ]}
+            rows={exportRows}
+            disabled={loading}
+          />
           <Link
             href="/items"
             className="inline-flex h-9 items-center px-3 sm:px-4 text-[12px] sm:text-[13px] font-medium border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors"

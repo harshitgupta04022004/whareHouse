@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { listAuditLog, verifyAuditIntegrity } from "@/lib/api-client";
+import ExportMenu from "@/components/ExportMenu";
 
 interface AuditEntry {
   log_id: number;
@@ -106,20 +107,45 @@ export default function AuditPage() {
             Append-only trail of all actions.
           </p>
         </div>
-        <button
-          onClick={handleVerify}
-          disabled={verifying}
-          className="inline-flex h-9 items-center gap-2 px-3 sm:px-4 text-[12px] sm:text-[13px] font-semibold border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors disabled:opacity-60"
-        >
-          {verifying ? (
-            <div className="w-3.5 h-3.5 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
-          ) : (
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          )}
-          Verify Integrity
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <ExportMenu
+            filename={`audit-${actionFilter || "all"}`}
+            title="Audit Log"
+            sheetName="Audit"
+            subtitle={actionFilter ? `Filter: ${actionFilter}` : undefined}
+            columns={[
+              { key: "timestamp", header: "Timestamp" },
+              { key: "user", header: "User" },
+              { key: "action", header: "Action" },
+              { key: "entity", header: "Entity" },
+              { key: "entity_id", header: "Entity ID" },
+              { key: "ip_address", header: "IP Address" },
+            ]}
+            rows={entries.map((e) => ({
+              timestamp: e.timestamp ? new Date(e.timestamp).toLocaleString("en-IN") : "",
+              user: e.app_users?.name ?? e.user_id ?? "",
+              action: e.action,
+              entity: e.entity,
+              entity_id: e.entity_id ?? "",
+              ip_address: e.ip_address ?? "",
+            }))}
+            disabled={loading}
+          />
+          <button
+            onClick={handleVerify}
+            disabled={verifying}
+            className="inline-flex h-9 items-center gap-2 px-3 sm:px-4 text-[12px] sm:text-[13px] font-semibold border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors disabled:opacity-60"
+          >
+            {verifying ? (
+              <div className="w-3.5 h-3.5 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            )}
+            Verify Integrity
+          </button>
+        </div>
       </div>
 
       {integrityResult && (

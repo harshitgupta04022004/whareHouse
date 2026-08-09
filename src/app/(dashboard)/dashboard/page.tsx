@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { getDashboard } from "@/lib/api-client";
 import { formatDate } from "@/lib/utils";
+import ExportMenu from "@/components/ExportMenu";
 
 interface ProductRow {
   item_id: string;
@@ -90,20 +91,20 @@ export default function AdminDashboardPage() {
     );
   }, [rows]);
 
-  const exportCSV = () => {
-    const header = "Product,Bag Size (kg),IN (bags),IN (kg),OUT (bags),OUT (kg),Remaining,Remaining Bags";
-    const csvRows = rows.map((r) =>
-      [r.product, r.bag_size, r.in_bags, r.in_kg, r.out_bags, r.out_kg, r.remaining, r.remaining_bags].join(",")
-    );
-    const csv = [header, ...csvRows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `inventory-${from}-${to}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const exportRows = useMemo(
+    () =>
+      rows.map((r) => ({
+        product: r.product,
+        bag_size: r.bag_size,
+        in_bags: r.in_bags,
+        in_kg: r.in_kg,
+        out_bags: r.out_bags,
+        out_kg: r.out_kg,
+        remaining: r.remaining,
+        remaining_bags: r.remaining_bags,
+      })),
+    [rows],
+  );
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-4">
@@ -119,15 +120,24 @@ export default function AdminDashboardPage() {
             चयनित अवधि के लिए उत्पाद अनुसार IN/OUT आवाजाही मैट्रिक्स।
           </p>
         </div>
-        <button
-          onClick={exportCSV}
-          className="inline-flex h-9 items-center gap-1.5 px-3 sm:px-4 text-[12px] sm:text-[13px] font-medium border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors print:hidden"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Export CSV / CSV निर्यात
-        </button>
+        <ExportMenu
+          filename={`inventory-${from}-${to}`}
+          title="Inventory Dashboard"
+          sheetName="Inventory"
+          subtitle={`${formatDate(from)} - ${formatDate(to)}`}
+          columns={[
+            { key: "product", header: "Product" },
+            { key: "bag_size", header: "Bag Size (kg)" },
+            { key: "in_bags", header: "IN (bags)" },
+            { key: "in_kg", header: "IN (kg)" },
+            { key: "out_bags", header: "OUT (bags)" },
+            { key: "out_kg", header: "OUT (kg)" },
+            { key: "remaining", header: "Remaining (kg)" },
+            { key: "remaining_bags", header: "Remaining Bags" },
+          ]}
+          rows={exportRows}
+          disabled={loading}
+        />
       </div>
 
       {/* Date Range */}

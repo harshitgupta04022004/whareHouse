@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { listParties, createParty, updateParty, deleteParty } from "@/lib/api-client";
+import ExportMenu from "@/components/ExportMenu";
 
 interface Party {
   party_id: string;
@@ -101,18 +102,36 @@ export default function PartiesPage() {
         <span className="text-ink-soft">Parties</span>
       </div>
 
-      <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
-        Parties <span className="text-[16px] sm:text-[18px] text-ink-soft font-normal">/ पार्टी</span>
-      </h1>
-      <p className="text-[12px] sm:text-[14px] text-ink-soft mb-2">
-        Manage trading parties — buyers, suppliers and transporters.
-      </p>
-      <p className="text-[11px] sm:text-[13px] text-ink-faint mb-1">
-        खरीदार, आपूर्तिकर्ता और ट्रांसपोर्टर की पार्टी प्रबंधित करें।
-      </p>
-      <p className="text-[11px] sm:text-[12px] text-ink-faint mb-6 sm:mb-8">
-        These appear in the DO form when selecting a party.
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6 sm:mb-8">
+        <div>
+          <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
+            Parties <span className="text-[16px] sm:text-[18px] text-ink-soft font-normal">/ पार्टी</span>
+          </h1>
+          <p className="text-[12px] sm:text-[14px] text-ink-soft mb-2">
+            Manage trading parties — buyers, suppliers and transporters.
+          </p>
+          <p className="text-[11px] sm:text-[13px] text-ink-faint mb-1">
+            खरीदार, आपूर्तिकर्ता और ट्रांसपोर्टर की पार्टी प्रबंधित करें।
+          </p>
+          <p className="text-[11px] sm:text-[12px] text-ink-faint">
+            These appear in the DO form when selecting a party.
+          </p>
+        </div>
+        <ExportMenu
+          filename="parties"
+          title="Parties"
+          sheetName="Parties"
+          columns={[
+            { key: "name", header: "Party Name" },
+            { key: "created_at", header: "Created At" },
+          ]}
+          rows={parties.map((p) => ({
+            name: p.name,
+            created_at: p.created_at ? new Date(p.created_at).toLocaleString("en-IN") : "",
+          }))}
+          disabled={loading}
+        />
+      </div>
 
       <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">

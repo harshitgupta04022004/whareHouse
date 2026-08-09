@@ -24,6 +24,7 @@ interface DOItem {
   bags: number;
   total_weight: number;
   bag_size: number;
+  vehicle_number?: string | null;
   items?: { name: string };
 }
 
@@ -195,6 +196,7 @@ export default function DODetailPage() {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-2.5">#</th>
+                <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-2.5">Vehicle No.</th>
                 <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-2.5">Item</th>
                 <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-2.5">Bags</th>
                 <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-5 py-2.5">Weight</th>
@@ -204,6 +206,7 @@ export default function DODetailPage() {
               {DO.do_items?.map((item) => (
                 <tr key={item.do_item_id} className="border-b border-border/50 last:border-0">
                   <td className="px-5 py-2.5 text-[12px] text-ink-faint">{item.sequence_num}</td>
+                  <td className="px-5 py-2.5 text-[13px] text-ink">{item.vehicle_number || "—"}</td>
                   <td className="px-5 py-2.5 text-[13px] text-ink font-medium">{item.items?.name || item.item_id}</td>
                   <td className="px-5 py-2.5 text-[13px] text-ink text-right">{item.bags}</td>
                   <td className="px-5 py-2.5 text-[13px] text-ink text-right">{formatWeight(item.total_weight)}</td>
@@ -212,7 +215,7 @@ export default function DODetailPage() {
             </tbody>
             <tfoot>
               <tr className="border-t border-border">
-                <td colSpan={2} className="px-5 py-2.5 text-[13px] text-ink-soft font-semibold">Total</td>
+                <td colSpan={3} className="px-5 py-2.5 text-[13px] text-ink-soft font-semibold">Total</td>
                 <td className="px-5 py-2.5 text-[13px] text-ink font-semibold text-right">{totalBags}</td>
                 <td className="px-5 py-2.5 text-[13px] text-ink font-semibold text-right">{formatWeight(totalWeight)}</td>
               </tr>

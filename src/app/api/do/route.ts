@@ -17,6 +17,7 @@ const doItemSchema = z.object({
   item_id: z.string().uuid(),
   bags: z.number().int().min(1).max(10000),
   bag_size: z.number().positive(),
+  vehicle_number: z.string().trim().max(50).optional().nullable(),
 });
 
 const createDoSchema = z.object({
@@ -109,7 +110,7 @@ export async function GET(request: Request) {
         app_users(name),
         created_at,
         updated_at,
-        do_items(bags, total_weight, item_id, items(name, bag_size))
+        do_items(bags, total_weight, item_id, vehicle_number, items(name, bag_size))
       `)
       .eq("warehouse_id", user.warehouseId)
       .order("date", { ascending: false })
@@ -229,6 +230,7 @@ async function createDoHandler(request: Request): Promise<Response> {
       bags: item.bags,
       bag_size: item.bag_size,
       total_weight: Math.round(item.bags * item.bag_size * 100) / 100,
+      vehicle_number: item.vehicle_number?.trim() || null,
     }));
 
     const supabase = createServiceClient();
@@ -336,6 +338,7 @@ export async function PATCH(request: Request) {
         do_id, item_id: item.item_id, sequence_num: idx + 1,
         bags: item.bags, bag_size: item.bag_size,
         total_weight: Math.round(item.bags * item.bag_size * 100) / 100,
+        vehicle_number: item.vehicle_number?.trim() || null,
       }));
       const { error: itemsError } = await supabase.from("do_items").insert(doItems);
       if (itemsError) throw itemsError;

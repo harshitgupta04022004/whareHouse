@@ -87,12 +87,13 @@ export default function EditDOPage() {
             bags: number;
             total_weight: number;
             bag_size?: number;
+            vehicle_number?: string | null;
           }) => {
             const catalogItem = catalog.find((entry) => entry.item_id === item.item_id);
             const bagSize = catalogItem?.bag_size ?? item.bag_size ?? 0;
             return {
               itemId: item.item_id,
-              vehicleNumber: "",
+              vehicleNumber: item.vehicle_number?.trim() ?? "",
               bags: item.bags ?? 0,
               totalWeight:
                 item.total_weight ??
@@ -226,6 +227,7 @@ export default function EditDOPage() {
               item_id: item.itemId,
               bags: item.bags,
               bag_size: bagSize > 0 ? bagSize : 50,
+              vehicle_number: item.vehicleNumber.trim() || null,
             };
           }),
         },

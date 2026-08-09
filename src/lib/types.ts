@@ -205,6 +205,7 @@ export type Database = {
           bags: number;
           total_weight: number;
           bag_size: number;
+          vehicle_number: string | null;
           created_at: string;
         };
         Insert: {
@@ -215,6 +216,7 @@ export type Database = {
           bags: number;
           total_weight: number;
           bag_size: number;
+          vehicle_number?: string | null;
           created_at?: string;
         };
         Update: {
@@ -225,6 +227,7 @@ export type Database = {
           bags?: number;
           total_weight?: number;
           bag_size?: number;
+          vehicle_number?: string | null;
           created_at?: string;
         };
         Relationships: [

@@ -12,6 +12,7 @@ interface DOItem {
   bags: number;
   total_weight: number;
   bag_size: number;
+  vehicle_number?: string | null;
   items?: { name: string };
 }
 
@@ -117,6 +118,7 @@ export default function DOPrintPage() {
           <thead>
             <tr className="bg-gray-100">
               <th className="border border-gray-300 px-3 py-2 text-left">#</th>
+              <th className="border border-gray-300 px-3 py-2 text-left">Vehicle No.</th>
               <th className="border border-gray-300 px-3 py-2 text-left">Item</th>
               <th className="border border-gray-300 px-3 py-2 text-right">Bags</th>
               <th className="border border-gray-300 px-3 py-2 text-right">Bag Size (kg)</th>
@@ -127,6 +129,7 @@ export default function DOPrintPage() {
             {DO.do_items?.map((item) => (
               <tr key={item.do_item_id}>
                 <td className="border border-gray-300 px-3 py-2">{item.sequence_num}</td>
+                <td className="border border-gray-300 px-3 py-2">{item.vehicle_number || "—"}</td>
                 <td className="border border-gray-300 px-3 py-2 font-medium">{item.items?.name || `Item ${item.sequence_num}`}</td>
                 <td className="border border-gray-300 px-3 py-2 text-right">{item.bags}</td>
                 <td className="border border-gray-300 px-3 py-2 text-right">{item.bag_size}</td>
@@ -136,7 +139,7 @@ export default function DOPrintPage() {
           </tbody>
           <tfoot>
             <tr className="bg-gray-50 font-bold">
-              <td colSpan={2} className="border border-gray-300 px-3 py-2">Total</td>
+              <td colSpan={3} className="border border-gray-300 px-3 py-2">Total</td>
               <td className="border border-gray-300 px-3 py-2 text-right">{totalBags}</td>
               <td className="border border-gray-300 px-3 py-2"></td>
               <td className="border border-gray-300 px-3 py-2 text-right">{formatWeight(totalWeight)}</td>

@@ -11,6 +11,13 @@ import {
   last7DaysRange,
 } from "@/lib/utils";
 
+interface DOItemRow {
+  bags: number;
+  total_weight: number;
+  vehicle_number?: string | null;
+  items?: { name: string; bag_size?: number } | null;
+}
+
 interface DORecord {
   do_id: string;
   do_number: string;
@@ -20,7 +27,7 @@ interface DORecord {
   created_at: string;
   parties?: { name: string } | null;
   app_users?: { name: string } | null;
-  do_items?: { bags: number; total_weight: number }[];
+  do_items?: DOItemRow[];
 }
 
 export default function DOsPage() {
@@ -428,14 +435,12 @@ export default function DOsPage() {
                           By: <span className="text-ink-soft">{DO.app_users.name}</span>
                         </span>
                       )}
+                      {(DO.do_items?.length ?? 0) > 0 && (
+                        <span>
+                          Items: <span className="text-ink-soft">{DO.do_items?.length ?? DO.item_count}</span>
+                        </span>
+                      )}
                     </div>
-                    {DO.item_count > 0 && (
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5 text-[11px] sm:text-[12px] text-ink-faint">
-                        <span>Items: <span className="text-ink-soft">{DO.item_count}</span></span>
-                        <span>Bags: <span className="text-ink-soft">{totalBags}</span></span>
-                        <span>Weight: <span className="text-ink-soft">{formatWeight(totalWeight)}</span></span>
-                      </div>
-                    )}
                   </div>
                   <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                     <Link
@@ -468,6 +473,66 @@ export default function DOsPage() {
                     </button>
                   </div>
                 </div>
+
+                {(DO.do_items?.length ?? 0) > 0 && (
+                  <div className="mt-3 overflow-x-auto rounded-[10px] border border-border/70 bg-surface-2">
+                    <table className="w-full min-w-[420px]">
+                      <thead>
+                        <tr className="border-b border-border/60">
+                          <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                            Vehicle No.
+                          </th>
+                          <th className="px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                            Item
+                          </th>
+                          <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                            Bags
+                          </th>
+                          <th className="px-3 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                            Weight
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {DO.do_items?.map((item, index) => (
+                          <tr
+                            key={`${DO.do_id}-${item.items?.name ?? index}-${index}`}
+                            className="border-b border-border/40 last:border-b-0"
+                          >
+                            <td className="px-3 py-2 text-[12px] text-ink">
+                              {item.vehicle_number?.trim() || "—"}
+                            </td>
+                            <td className="px-3 py-2 text-[12px] font-medium text-ink">
+                              {item.items?.name ?? "Item"}
+                            </td>
+                            <td className="px-3 py-2 text-right text-[12px] text-ink-soft">
+                              {item.bags}
+                            </td>
+                            <td className="px-3 py-2 text-right text-[12px] text-ink-soft">
+                              {formatWeight(item.total_weight)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-border/60">
+                          <td
+                            colSpan={2}
+                            className="px-3 py-2 text-[12px] font-semibold text-ink-soft"
+                          >
+                            Total
+                          </td>
+                          <td className="px-3 py-2 text-right text-[12px] font-semibold text-ink">
+                            {totalBags}
+                          </td>
+                          <td className="px-3 py-2 text-right text-[12px] font-semibold text-ink">
+                            {formatWeight(totalWeight)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
               </div>
             );
           })}

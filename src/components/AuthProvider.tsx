@@ -1,10 +1,21 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { getSupabase } from "@/lib/supabase-browser";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
+import {
+  getSupabase,
+  hasSupabaseBrowserConfig,
+} from "@/lib/supabase-browser";
 import { logLoginAudit, logLogoutAudit, pingUserPresence } from "@/lib/api-client";
 import { isSuperAdminEmail } from "@/lib/super-admin";
-import type { Session } from "@supabase/supabase-js";
+import type { Session, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/types";
 
 export interface AppUser {
   id: string;
@@ -34,37 +45,58 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = getSupabase();
 
-  const resolveAppUser = useCallback(async (s: Session): Promise<AppUser | null> => {
-    const { data, error } = await supabase
-      .from("app_users")
-      .select("user_id, email, name, role, warehouse_id")
-      .eq("user_id", s.user.id)
-      .maybeSingle();
+  // Lazy client creation — avoids crashing Next.js prerender when Preview env
+  // is missing NEXT_PUBLIC_SUPABASE_* (Production has them; Preview may not).
+  const supabase = useMemo<SupabaseClient<Database> | null>(() => {
+    if (typeof window === "undefined" && !hasSupabaseBrowserConfig()) {
+      return null;
+    }
+    if (!hasSupabaseBrowserConfig()) return null;
+    try {
+      return getSupabase();
+    } catch {
+      return null;
+    }
+  }, []);
 
-    if (error || !data) return null;
+  const [loading, setLoading] = useState(() => hasSupabaseBrowserConfig());
 
-    const { data: warehouse } = await supabase
-      .from("warehouses")
-      .select("name, is_deleted")
-      .eq("warehouse_id", data.warehouse_id)
-      .maybeSingle();
+  const resolveAppUser = useCallback(
+    async (s: Session): Promise<AppUser | null> => {
+      if (!supabase) return null;
 
-    if (!warehouse || warehouse.is_deleted) return null;
+      const { data, error } = await supabase
+        .from("app_users")
+        .select("user_id, email, name, role, warehouse_id")
+        .eq("user_id", s.user.id)
+        .maybeSingle();
 
-    return {
-      id: data.user_id,
-      email: data.email,
-      name: data.name,
-      role: data.role as "admin" | "manager" | "staff",
-      warehouseId: data.warehouse_id,
-      warehouseName: warehouse.name ?? "Warehouse",
-    };
-  }, [supabase]);
+      if (error || !data) return null;
+
+      const { data: warehouse } = await supabase
+        .from("warehouses")
+        .select("name, is_deleted")
+        .eq("warehouse_id", data.warehouse_id)
+        .maybeSingle();
+
+      if (!warehouse || warehouse.is_deleted) return null;
+
+      return {
+        id: data.user_id,
+        email: data.email,
+        name: data.name,
+        role: data.role as "admin" | "manager" | "staff",
+        warehouseId: data.warehouse_id,
+        warehouseName: warehouse.name ?? "Warehouse",
+      };
+    },
+    [supabase],
+  );
 
   useEffect(() => {
+    if (!supabase) return;
+
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       if (s) {
@@ -115,6 +147,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const refreshUser = useCallback(async () => {
+    if (!supabase) {
+      setUser(null);
+      setSession(null);
+      return null;
+    }
     const { data } = await supabase.auth.getSession();
     const s = data.session;
     setSession(s);
@@ -129,7 +166,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(
     async (email: string, password: string) => {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (!supabase) {
+        return { error: "Auth is not configured." };
+      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (error) {
         const msg =
           error.message === "Invalid login credentials"
@@ -137,7 +180,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             : error.message;
         return { error: msg };
       }
-      // Log login event to audit trail
       logLoginAudit().catch(() => {});
       return {};
     },
@@ -146,6 +188,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = useCallback(
     async (email: string, password: string, name: string) => {
+      if (!supabase) {
+        return { error: "Auth is not configured." };
+      }
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -158,8 +203,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           normalizedMessage.includes("already registered") ||
           normalizedMessage.includes("already exists");
 
-        // A user may accidentally use Create account for an existing login.
-        // Try their credentials directly instead of requesting another email.
         if (mayAlreadyExist) {
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
@@ -179,9 +222,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
-    // Log logout event to audit trail
     logLogoutAudit().catch(() => {});
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     setUser(null);
     setSession(null);
   }, [supabase]);

@@ -117,10 +117,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Covers password, Google OAuth, and magic-link sign-ins.
         // Skip INITIAL_SESSION / TOKEN_REFRESHED so page reloads don't spam login logs.
         // Defer so we don't deadlock inside onAuthStateChange.
+        // Dedupe rapid repeat SIGNED_IN (React remounts / multi-tab).
         if (event === "SIGNED_IN") {
-          window.setTimeout(() => {
-            logLoginAudit().catch(() => {});
-          }, 0);
+          const dedupeKey = `login-audit:${s.user.id}`;
+          const last = sessionStorage.getItem(dedupeKey);
+          const now = Date.now();
+          if (last && now - Number(last) < 60_000) {
+            // already logged recently
+          } else {
+            sessionStorage.setItem(dedupeKey, String(now));
+            window.setTimeout(() => {
+              logLoginAudit().catch(() => {});
+            }, 0);
+          }
         }
       } else {
         setUser(null);

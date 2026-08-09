@@ -60,6 +60,22 @@ export async function POST(request: Request) {
     const ip = getClientIp(request);
     const ua = getUserAgent(request);
 
+    // Dedupe burst login audits (multi-tab / repeated SIGNED_IN).
+    const since = new Date(Date.now() - 60_000).toISOString();
+    const { data: recentLogin } = await supabase
+      .from("audit_log")
+      .select("log_id")
+      .eq("warehouse_id", user.warehouseId)
+      .eq("user_id", user.userId)
+      .eq("action", "login")
+      .gte("timestamp", since)
+      .limit(1)
+      .maybeSingle();
+
+    if (recentLogin) {
+      return Response.json({ success: true, deduped: true });
+    }
+
     // Get the current session id from the auth token
     const authClient = createServerClient(request);
     const {

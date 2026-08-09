@@ -29,7 +29,7 @@ async function sha256(input: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function computeHash(
+export async function computeAuditContentHash(
   timestamp: string,
   userId: string | null,
   action: string,
@@ -45,6 +45,24 @@ async function computeHash(
     (oldData ? JSON.stringify(oldData) : "") +
     (newData ? JSON.stringify(newData) : "");
   return sha256(input);
+}
+
+async function computeHash(
+  timestamp: string,
+  userId: string | null,
+  action: string,
+  entityId: string | null,
+  oldData: Record<string, unknown> | null,
+  newData: Record<string, unknown> | null,
+): Promise<string> {
+  return computeAuditContentHash(
+    timestamp,
+    userId,
+    action,
+    entityId,
+    oldData,
+    newData,
+  );
 }
 
 // ─── Write Audit Entry ────────────────────────────────────────────────
@@ -149,5 +167,82 @@ export async function verifyAuditIntegrity(
     ok: row?.ok ?? false,
     brokenAt: row?.broken_at ?? null,
     message: row?.message ?? "Unknown error",
+  };
+}
+
+/**
+ * Fill missing current_hash values (e.g. old login/logout inserts),
+ * then re-link previous_hash via repair_audit_chain.
+ */
+export async function repairAuditChainWithHashBackfill(
+  supabase: SupabaseClient,
+  warehouseId: string,
+): Promise<{
+  ok: boolean;
+  backfilledCount: number;
+  repairedCount: number;
+  message: string;
+  verify: { ok: boolean; brokenAt: number | null; message: string };
+}> {
+  const { data: rows, error } = await supabase
+    .from("audit_log")
+    .select(
+      "log_id, user_id, action, entity_id, old_data, new_data, timestamp, current_hash",
+    )
+    .eq("warehouse_id", warehouseId)
+    .order("timestamp", { ascending: true })
+    .order("log_id", { ascending: true });
+
+  if (error) throw error;
+
+  let backfilledCount = 0;
+  for (const row of rows ?? []) {
+    if (row.current_hash) continue;
+
+    const timestamp =
+      typeof row.timestamp === "string"
+        ? row.timestamp
+        : new Date(row.timestamp as string).toISOString();
+
+    const currentHash = await computeAuditContentHash(
+      timestamp,
+      row.user_id ?? null,
+      row.action,
+      row.entity_id ?? null,
+      (row.old_data as Record<string, unknown> | null) ?? null,
+      (row.new_data as Record<string, unknown> | null) ?? null,
+    );
+
+    const { error: updateError } = await supabase
+      .from("audit_log")
+      .update({ current_hash: currentHash })
+      .eq("log_id", row.log_id);
+
+    if (updateError) throw updateError;
+    backfilledCount += 1;
+  }
+
+  const { data: repairData, error: repairError } = await supabase.rpc(
+    "repair_audit_chain",
+    { p_warehouse_id: warehouseId },
+  );
+  if (repairError) throw repairError;
+
+  const repairRow = Array.isArray(repairData) ? repairData[0] : repairData;
+  const verify = await verifyAuditIntegrity(supabase, warehouseId);
+
+  return {
+    ok: verify.ok,
+    backfilledCount,
+    repairedCount: repairRow?.repaired_count ?? 0,
+    message: [
+      backfilledCount > 0
+        ? `Backfilled ${backfilledCount} missing content hash(es).`
+        : null,
+      repairRow?.message ?? "Repair finished.",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    verify,
   };
 }

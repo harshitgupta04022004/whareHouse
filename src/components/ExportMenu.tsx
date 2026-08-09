@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { exportData, type ExportColumn, type ExportRow } from "@/lib/export-utils";
 
 type Format = "csv" | "xlsx" | "pdf";
@@ -28,7 +28,9 @@ export default function ExportMenu({
 }: ExportMenuProps) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [align, setAlign] = useState<"left" | "right">("left");
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -36,9 +38,25 @@ export default function ExportMenu({
         setOpen(false);
       }
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const menuWidth = 168;
+    const spaceRight = window.innerWidth - rect.left;
+    // Prefer left-align (opens rightward) when near the left edge / tight on the right.
+    setAlign(spaceRight < menuWidth + 12 ? "right" : "left");
+  }, [open]);
 
   const handleExport = async (format: Format) => {
     setBusy(true);
@@ -62,9 +80,12 @@ export default function ExportMenu({
   return (
     <div ref={ref} className={`relative inline-block ${className}`}>
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled || busy || rows.length === 0}
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
         className="inline-flex h-9 items-center gap-1.5 px-3 text-[12px] sm:text-[13px] font-medium border border-border text-ink-soft hover:text-ink hover:bg-white/5 rounded-[10px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed print:hidden"
       >
         {busy ? (
@@ -81,7 +102,12 @@ export default function ExportMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1 z-40 min-w-[150px] rounded-[10px] border border-border bg-surface shadow-[var(--shadow-lg)] overflow-hidden">
+        <div
+          role="menu"
+          className={`absolute top-full mt-1 z-50 min-w-[168px] rounded-[10px] border border-border bg-surface shadow-[var(--shadow-lg)] overflow-hidden ${
+            align === "left" ? "left-0" : "right-0"
+          }`}
+        >
           {(
             [
               ["csv", "CSV"],
@@ -92,8 +118,9 @@ export default function ExportMenu({
             <button
               key={format}
               type="button"
-              onClick={() => handleExport(format)}
-              className="w-full text-left px-3 py-2 text-[12px] text-ink-soft hover:text-ink hover:bg-white/5 transition-colors"
+              role="menuitem"
+              onClick={() => void handleExport(format)}
+              className="w-full text-left px-3 py-2.5 text-[12px] text-ink-soft hover:text-ink hover:bg-white/5 transition-colors"
             >
               {label}
             </button>

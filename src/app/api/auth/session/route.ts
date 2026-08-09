@@ -2,6 +2,7 @@ import { getAuthIdentity, getAuthUser, requireAuth } from "@/lib/auth";
 import { handleApiError } from "@/lib/errors";
 import { createServiceClient, createServerClient } from "@/lib/supabase";
 import { getClientIp, getUserAgent } from "@/lib/auth";
+import { writeAudit } from "@/lib/audit";
 
 /**
  * GET /api/auth/session
@@ -61,19 +62,21 @@ export async function POST(request: Request) {
 
     // Get the current session id from the auth token
     const authClient = createServerClient(request);
-    const { data: { session } } = await authClient.auth.getSession();
+    const {
+      data: { session },
+    } = await authClient.auth.getSession();
     const sessionId = session?.access_token?.slice(-8) ?? null;
 
-    await supabase.from("audit_log").insert({
-      warehouse_id: user.warehouseId,
-      user_id: user.userId,
+    await writeAudit(supabase, {
+      warehouseId: user.warehouseId,
+      userId: user.userId,
       entity: "user",
-      entity_id: user.userId,
+      entityId: user.userId,
       action: "login",
-      new_data: { email: user.email, role: user.role },
-      ip_address: ip ?? undefined,
-      user_agent: ua ?? undefined,
-      session_id: sessionId ?? undefined,
+      newData: { email: user.email, role: user.role },
+      ipAddress: ip,
+      userAgent: ua,
+      sessionId,
     });
 
     return Response.json({ success: true });
@@ -96,15 +99,15 @@ export async function DELETE(request: Request) {
       const ip = getClientIp(request);
       const ua = getUserAgent(request);
 
-      await supabase.from("audit_log").insert({
-        warehouse_id: user.warehouseId,
-        user_id: user.userId,
+      await writeAudit(supabase, {
+        warehouseId: user.warehouseId,
+        userId: user.userId,
         entity: "user",
-        entity_id: user.userId,
+        entityId: user.userId,
         action: "logout",
-        old_data: { email: user.email, role: user.role },
-        ip_address: ip ?? undefined,
-        user_agent: ua ?? undefined,
+        oldData: { email: user.email, role: user.role },
+        ipAddress: ip,
+        userAgent: ua,
       });
     }
 

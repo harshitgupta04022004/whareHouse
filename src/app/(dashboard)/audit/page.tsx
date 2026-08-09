@@ -71,7 +71,9 @@ export default function AuditPage() {
         setIntegrityResult(
           result.ok
             ? "Audit chain integrity verified — no tampering detected."
-            : `Chain broken at log #${result.brokenAt}: ${result.message}`,
+            : result.brokenAt != null
+              ? `Chain broken at log #${result.brokenAt}. ${result.message}`
+              : result.message || "Chain integrity check failed.",
         );
       } else {
         setChainBroken(false);
@@ -103,6 +105,8 @@ export default function AuditPage() {
           ? `${result.message ?? "Repaired."} Integrity verified.`
           : `Repair ran, but chain is still broken: ${result.verify?.message ?? result.message}`,
       );
+      // Refresh list so newly linked rows are visible after repair.
+      await fetchEntries();
     } catch (err) {
       setIntegrityResult(
         err instanceof Error ? err.message : "Failed to repair audit chain.",

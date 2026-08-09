@@ -158,7 +158,7 @@ export default function ItemsPage() {
             Products available when creating a DO.
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap shrink-0 relative z-20">
           <ExportMenu
             filename="items"
             title="Item List"

@@ -12,16 +12,17 @@ export default function HomePage() {
     if (typeof window === "undefined") return;
 
     const hash = window.location.hash;
+    const isRecoveryOrInvite = hash.includes("type=recovery") || hash.includes("type=invite");
 
     // If URL has a recovery/invite token, redirect to reset-password immediately
-    // Use a sessionStorage flag to prevent redirect loops across page reloads
-    if (hash.includes("type=recovery") || hash.includes("type=invite")) {
+    if (isRecoveryOrInvite) {
       const alreadyRedirecting = sessionStorage.getItem("resetRedirect");
       if (!alreadyRedirecting) {
         sessionStorage.setItem("resetRedirect", "1");
         window.location.replace("/reset-password" + hash);
-        return;
       }
+      // Always return — never do session-based redirects when token is present
+      return;
     }
 
     // Clear the flag once we're no longer on a recovery URL

@@ -115,14 +115,11 @@ export default function ItemsPage() {
       <h1 className="font-display text-[22px] sm:text-[28px] font-bold tracking-[-0.02em] text-ink mb-1">
         Item List <span className="text-[16px] sm:text-[18px] text-ink-soft font-normal">/ माल सूची</span>
       </h1>
-      <p className="text-[12px] sm:text-[14px] text-ink-soft mb-2">
-        Add or remove the items that appear in the DO drop-down — Wheat, Sugar, fruits, or anything new.
+      <p className="text-[12px] sm:text-[14px] text-ink-soft mb-1">
+        Manage items used in DOs — add, edit, or remove (Wheat, Sugar, etc.).
       </p>
-      <p className="text-[11px] sm:text-[13px] text-ink-faint mb-1">
-        DO में दिखने वाले माल को जोड़ें या हटाएं — गेहूं, चीनी, फल, या कुछ भी नया।
-      </p>
-      <p className="text-[11px] sm:text-[12px] text-ink-faint mb-6 sm:mb-8">
-        These are the items you can pick when creating a DO. Need a new one? Ask an admin to add it.
+      <p className="text-[11px] sm:text-[13px] text-ink-faint mb-6 sm:mb-8">
+        DO में इस्तेमाल होने वाले माल को जोड़ें, बदलें या हटाएं — गेहूं, चीनी आदि।
       </p>
 
       <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">

@@ -173,7 +173,7 @@ export async function updateUserRole(userId: string, role: string) {
   return authedFetch(`/users?id=${userId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role }),
+    body: JSON.stringify({ user_id: userId, role }),
   });
 }
 

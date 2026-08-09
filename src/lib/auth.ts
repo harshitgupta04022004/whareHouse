@@ -145,7 +145,9 @@ export function getServiceClient(): SupabaseClient {
 export function getClientIp(request: Request): string | null {
   return (
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
+    request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("cf-connecting-ip")?.trim() ??
+    request.headers.get("x-real-ip")?.trim() ??
     null
   );
 }

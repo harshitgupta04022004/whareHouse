@@ -9,7 +9,7 @@ const ROUTE_KEY_INTEGRITY = "GET /api/audit/integrity";
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_INTEGRITY, user);
+    await checkRouteAccess(ROUTE_KEY_INTEGRITY, user, request);
 
     const supabase = createServiceClient();
     const result = await repairAuditChainWithHashBackfill(

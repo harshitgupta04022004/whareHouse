@@ -28,7 +28,7 @@ const updateItemSchema = z.object({
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_GET, user);
+    await checkRouteAccess(ROUTE_KEY_GET, user, request);
 
     const url = new URL(request.url);
     const withTotals = url.searchParams.get("totals") === "true";
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_POST, user);
+    await checkRouteAccess(ROUTE_KEY_POST, user, request);
 
     const body = await request.json();
     const parsed = createItemSchema.safeParse(body);
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
       entityId: data.item_id,
       action: "create",
       newData: { name: parsed.data.name, bag_size: parsed.data.bag_size },
-    });
+    }, request);
 
     return Response.json(
       { item_id: data.item_id, message: "Item created." },
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_PATCH, user);
+    await checkRouteAccess(ROUTE_KEY_PATCH, user, request);
 
     const body = await request.json();
     const parsed = updateItemSchema.safeParse(body);
@@ -191,7 +191,7 @@ export async function PATCH(request: Request) {
       action,
       oldData: existing as unknown as Record<string, unknown>,
       newData: { ...existing, ...updateFields } as Record<string, unknown>,
-    });
+    }, request);
 
     return Response.json({ message: "Item updated." });
   } catch (error) {
@@ -206,7 +206,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_DELETE, user);
+    await checkRouteAccess(ROUTE_KEY_DELETE, user, request);
 
     const url = new URL(request.url);
     const itemId = url.searchParams.get("id");
@@ -238,7 +238,7 @@ export async function DELETE(request: Request) {
       entityId: itemId,
       action: "delete",
       oldData: existing as unknown as Record<string, unknown>,
-    });
+    }, request);
 
     return Response.json({ message: "Item deleted." });
   } catch (error) {

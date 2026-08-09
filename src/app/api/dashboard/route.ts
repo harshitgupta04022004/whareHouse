@@ -12,7 +12,7 @@ const ROUTE_KEY = "GET /api/dashboard";
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY, user);
+    await checkRouteAccess(ROUTE_KEY, user, request);
 
     const url = new URL(request.url);
     const startDate =

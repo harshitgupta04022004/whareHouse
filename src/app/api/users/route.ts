@@ -52,7 +52,7 @@ function withPresence<T extends {
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_GET, user);
+    await checkRouteAccess(ROUTE_KEY_GET, user, request);
 
     const url = new URL(request.url);
     const userId = url.searchParams.get("id");
@@ -98,7 +98,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_POST, user);
+    await checkRouteAccess(ROUTE_KEY_POST, user, request);
 
     const body = await request.json();
     const parsed = inviteUserSchema.safeParse(body);
@@ -214,7 +214,7 @@ export async function POST(request: Request) {
       entityId: authUserId,
       action: "add_user",
       newData: { name, email, role },
-    });
+    }, request);
 
     const message = inviteSent
       ? "User invited. They will receive an email to set their password."
@@ -236,7 +236,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_PATCH, user);
+    await checkRouteAccess(ROUTE_KEY_PATCH, user, request);
 
     const body = await request.json();
     const parsed = updateUserSchema.safeParse(body);
@@ -296,7 +296,7 @@ export async function PATCH(request: Request) {
       action: "update_user",
       oldData: existing as unknown as Record<string, unknown>,
       newData: { ...existing, ...updateFields } as Record<string, unknown>,
-    });
+    }, request);
 
     return Response.json({ message: "User updated." });
   } catch (error) {
@@ -311,7 +311,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_DELETE, user);
+    await checkRouteAccess(ROUTE_KEY_DELETE, user, request);
 
     const url = new URL(request.url);
     const targetUserId = url.searchParams.get("id");
@@ -356,7 +356,7 @@ export async function DELETE(request: Request) {
       entityId: targetUserId,
       action: "remove_user",
       oldData: existing as unknown as Record<string, unknown>,
-    });
+    }, request);
 
     return Response.json({ message: "User removed." });
   } catch (error) {

@@ -52,7 +52,11 @@ const ROUTE_POLICIES: Record<string, RoutePolicy> = {
  * Check if the user's role is allowed for the given route key.
  * Logs denied attempts to audit_log.
  */
-export async function checkRouteAccess(routeKey: string, user: AuthUser): Promise<void> {
+export async function checkRouteAccess(
+  routeKey: string,
+  user: AuthUser,
+  request?: Request | null,
+): Promise<void> {
   const policy = ROUTE_POLICIES[routeKey];
   if (!policy) return;
 
@@ -60,14 +64,22 @@ export async function checkRouteAccess(routeKey: string, user: AuthUser): Promis
     // Log denied attempt to audit
     try {
       const supabase = createServiceClient();
-      await writeAudit(supabase, {
-        warehouseId: user.warehouseId,
-        userId: user.userId,
-        entity: "security",
-        entityId: null,
-        action: "permission_denied",
-        newData: { route: routeKey, role: user.role, required_roles: policy.allowedRoles },
-      });
+      await writeAudit(
+        supabase,
+        {
+          warehouseId: user.warehouseId,
+          userId: user.userId,
+          entity: "security",
+          entityId: null,
+          action: "permission_denied",
+          newData: {
+            route: routeKey,
+            role: user.role,
+            required_roles: policy.allowedRoles,
+          },
+        },
+        request,
+      );
     } catch {
       // Audit log failure should not block the request
     }

@@ -19,7 +19,7 @@ const updateProfileSchema = z.object({
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_GET, user);
+    await checkRouteAccess(ROUTE_KEY_GET, user, request);
 
     const supabase = createServiceClient();
 
@@ -132,7 +132,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_PATCH, user);
+    await checkRouteAccess(ROUTE_KEY_PATCH, user, request);
 
     const body = await request.json();
     const parsed = updateProfileSchema.safeParse(body);
@@ -169,7 +169,7 @@ export async function PATCH(request: Request) {
       action: "update",
       oldData: { name: existing.name },
       newData: { name },
-    });
+    }, request);
 
     return Response.json({ name, message: "Profile updated." });
   } catch (error) {

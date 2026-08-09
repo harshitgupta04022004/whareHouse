@@ -4,6 +4,7 @@
 // Every mutating API must call writeAudit() after a successful write.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getClientIp, getUserAgent } from "@/lib/auth";
 
 export interface AuditEntry {
   warehouseId: string;
@@ -70,18 +71,19 @@ async function computeHash(
 /**
  * Write an audit log entry with hash chain integrity.
  *
- * 1. Fetch the previous hash for this warehouse
- * 2. Compute current hash from row data
- * 3. Insert with previous_hash → current_hash chain
- *
- * @param supabase - Service-role Supabase client (bypasses RLS for insert)
- * @param entry - The audit entry to write
+ * Pass the incoming `request` so IP / user-agent are stored for every action
+ * (not only login/logout). Explicit entry.ipAddress / userAgent still win.
  */
 export async function writeAudit(
   supabase: SupabaseClient,
   entry: AuditEntry,
+  request?: Request | null,
 ): Promise<void> {
   const timestamp = new Date().toISOString();
+  const ipAddress =
+    entry.ipAddress ?? (request ? getClientIp(request) : null) ?? null;
+  const userAgent =
+    entry.userAgent ?? (request ? getUserAgent(request) : null) ?? null;
 
   // Compute content hash first. Chain linking is done atomically in Postgres
   // so concurrent writes cannot leave a broken previous_hash.
@@ -102,8 +104,8 @@ export async function writeAudit(
     p_action: entry.action,
     p_old_data: entry.oldData ?? null,
     p_new_data: entry.newData ?? null,
-    p_ip_address: entry.ipAddress ?? null,
-    p_user_agent: entry.userAgent ?? null,
+    p_ip_address: ipAddress,
+    p_user_agent: userAgent,
     p_session_id: entry.sessionId ?? null,
     p_request_id: entry.requestId ?? null,
     p_current_hash: currentHash,
@@ -133,8 +135,8 @@ export async function writeAudit(
       action: entry.action,
       old_data: entry.oldData ?? null,
       new_data: entry.newData ?? null,
-      ip_address: entry.ipAddress ?? undefined,
-      user_agent: entry.userAgent ?? undefined,
+      ip_address: ipAddress ?? undefined,
+      user_agent: userAgent ?? undefined,
       session_id: entry.sessionId ?? undefined,
       request_id: entry.requestId ?? undefined,
       previous_hash: previousHash,

@@ -42,7 +42,7 @@ const updateDoSchema = z.object({
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_GET, user);
+    await checkRouteAccess(ROUTE_KEY_GET, user, request);
 
     const url = new URL(request.url);
     const requestedId = url.searchParams.get("id");
@@ -186,7 +186,7 @@ export async function GET(request: Request) {
 async function createDoHandler(request: Request): Promise<Response> {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_POST, user);
+    await checkRouteAccess(ROUTE_KEY_POST, user, request);
 
     const body = await request.json();
     const parsed = createDoSchema.safeParse(body);
@@ -261,14 +261,14 @@ async function createDoHandler(request: Request): Promise<Response> {
       entity: "do", entityId: doRow.do_id, action: "create",
       newData: { do_number, direction, date, party_id, items: doItems },
       requestId,
-    });
+    }, request);
 
     for (const item of doItems) {
       await writeAudit(supabase, {
         warehouseId: user.warehouseId, userId: user.userId,
         entity: "do_item", entityId: null, action: "create",
         newData: { do_id: doRow.do_id, ...item }, requestId,
-      });
+      }, request);
     }
 
     return Response.json({ do_id: doRow.do_id, message: "Delivery order created." }, { status: 201 });
@@ -287,7 +287,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_PATCH, user);
+    await checkRouteAccess(ROUTE_KEY_PATCH, user, request);
 
     const body = await request.json();
     const parsed = updateDoSchema.safeParse(body);
@@ -351,7 +351,7 @@ export async function PATCH(request: Request) {
       entity: "do", entityId: do_id, action: "update",
       oldData: existingDo as unknown as Record<string, unknown>,
       newData: updatedDo as unknown as Record<string, unknown>,
-    });
+    }, request);
 
     return Response.json({ do_id, message: "Delivery order updated." });
   } catch (error) {
@@ -364,7 +364,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_DELETE, user);
+    await checkRouteAccess(ROUTE_KEY_DELETE, user, request);
 
     const url = new URL(request.url);
     const doId = url.searchParams.get("id");
@@ -390,7 +390,7 @@ export async function DELETE(request: Request) {
       warehouseId: user.warehouseId, userId: user.userId,
       entity: "do", entityId: doId, action: "delete",
       oldData: { ...(existingDo as unknown as Record<string, unknown>), items: existingItems },
-    });
+    }, request);
 
     return Response.json({ message: "Delivery order deleted." });
   } catch (error) {

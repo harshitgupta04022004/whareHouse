@@ -18,7 +18,7 @@ const ROUTE_KEY_DELETE = "DELETE /api/files";
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_POST, user);
+    await checkRouteAccess(ROUTE_KEY_POST, user, request);
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
         folder_path: stored.folderPath,
       },
       ipAddress: getClientIp(request), userAgent: getUserAgent(request),
-    });
+    }, request);
 
     return Response.json(
       {
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_GET, user);
+    await checkRouteAccess(ROUTE_KEY_GET, user, request);
 
     const url = new URL(request.url);
     const doId = url.searchParams.get("do_id");
@@ -160,7 +160,7 @@ export async function GET(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_DELETE, user);
+    await checkRouteAccess(ROUTE_KEY_DELETE, user, request);
 
     const url = new URL(request.url);
     const fileId = url.searchParams.get("id");
@@ -192,7 +192,7 @@ export async function DELETE(request: Request) {
       warehouseId: user.warehouseId, userId: user.userId,
       entity: "file", entityId: fileId, action: "delete",
       oldData: existing as unknown as Record<string, unknown>,
-    });
+    }, request);
 
     return Response.json({ message: "File deleted." });
   } catch (error) {

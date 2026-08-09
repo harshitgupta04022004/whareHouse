@@ -26,7 +26,7 @@ const updatePartySchema = z.object({
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_GET, user);
+    await checkRouteAccess(ROUTE_KEY_GET, user, request);
 
     const url = new URL(request.url);
     const partyId = url.searchParams.get("id");
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_POST, user);
+    await checkRouteAccess(ROUTE_KEY_POST, user, request);
 
     const body = await request.json();
     const parsed = createPartySchema.safeParse(body);
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       entityId: data.party_id,
       action: "create",
       newData: { name: parsed.data.name },
-    });
+    }, request);
 
     return Response.json(
       { party_id: data.party_id, message: "Party created." },
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_PATCH, user);
+    await checkRouteAccess(ROUTE_KEY_PATCH, user, request);
 
     const body = await request.json();
     const parsed = updatePartySchema.safeParse(body);
@@ -173,7 +173,7 @@ export async function PATCH(request: Request) {
       action: "update",
       oldData: existing as unknown as Record<string, unknown>,
       newData: { ...existing, name },
-    });
+    }, request);
 
     return Response.json({ message: "Party updated." });
   } catch (error) {
@@ -188,7 +188,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_DELETE, user);
+    await checkRouteAccess(ROUTE_KEY_DELETE, user, request);
 
     const url = new URL(request.url);
     const partyId = url.searchParams.get("id");
@@ -220,7 +220,7 @@ export async function DELETE(request: Request) {
       entityId: partyId,
       action: "delete",
       oldData: existing as unknown as Record<string, unknown>,
-    });
+    }, request);
 
     return Response.json({ message: "Party deleted." });
   } catch (error) {

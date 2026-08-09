@@ -9,7 +9,7 @@ const ROUTE_KEY_INTEGRITY = "GET /api/audit/integrity";
 export async function GET(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_LIST, user);
+    await checkRouteAccess(ROUTE_KEY_LIST, user, request);
 
     const url = new URL(request.url);
     const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") ?? "50", 10), 1), 200);
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
 export async function HEAD(request: Request) {
   try {
     const user = await requireAuth(request);
-    await checkRouteAccess(ROUTE_KEY_INTEGRITY, user);
+    await checkRouteAccess(ROUTE_KEY_INTEGRITY, user, request);
 
     const { verifyAuditIntegrity } = await import("@/lib/audit");
     const supabase = createServiceClient();

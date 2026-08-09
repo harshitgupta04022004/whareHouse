@@ -110,10 +110,13 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
           <h1 className="font-display text-[28px] font-bold tracking-[-0.02em] text-ink">
-            Inventory Dashboard
+            Inventory Dashboard <span className="text-[18px] text-ink-soft font-normal">/ इन्वेंटरी डैशबोर्ड</span>
           </h1>
           <p className="text-[14px] text-ink-soft mt-1">
             IN/OUT movement matrix by product for the selected period.
+          </p>
+          <p className="text-[13px] text-ink-faint mt-1">
+            चयनित अवधि के लिए उत्पाद अनुसार IN/OUT आवाजाही मैट्रिक्स।
           </p>
         </div>
         <button
@@ -123,7 +126,7 @@ export default function AdminDashboardPage() {
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          Export CSV
+          Export CSV / CSV निर्यात
         </button>
       </div>
 
@@ -131,11 +134,11 @@ export default function AdminDashboardPage() {
       <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5 mb-6 print:hidden">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-[11px] font-medium text-ink-faint mb-1">From</label>
+            <label className="block text-[11px] font-medium text-ink-faint mb-1">From / से</label>
             <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPreset(""); }} className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-ink-faint mb-1">To</label>
+            <label className="block text-[11px] font-medium text-ink-faint mb-1">To / तक</label>
             <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPreset(""); }} className="focus-ring h-9 rounded-[9px] border border-border bg-surface-2 px-3 text-[13px] text-ink" />
           </div>
           {["7d", "30d", "mtd"].map((p) => (
@@ -146,7 +149,7 @@ export default function AdminDashboardPage() {
                 preset === p ? "bg-brand text-brand-ink" : "text-ink-soft hover:text-ink hover:bg-white/5"
               }`}
             >
-              {p === "7d" ? "7 Days" : p === "30d" ? "30 Days" : "Month to Date"}
+              {p === "7d" ? "7 Days / 7 दिन" : p === "30d" ? "30 Days / 30 दिन" : "Month to Date / महीने से आज"}
             </button>
           ))}
         </div>
@@ -155,21 +158,21 @@ export default function AdminDashboardPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total IN</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total IN / कुल आना</div>
           <div className="font-display text-[28px] font-bold text-green-400 leading-none">{totals.totalInBags.toLocaleString()}</div>
-          <div className="text-[11px] text-ink-faint mt-1.5">bags in period</div>
+          <div className="text-[11px] text-ink-faint mt-1.5">bags in period / अवधि में बोरी</div>
           <div className="text-[13px] text-green-400/80 mt-1">{totals.totalInKg.toLocaleString()} kg</div>
         </div>
         <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total OUT</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total OUT / कुल जाना</div>
           <div className="font-display text-[28px] font-bold text-orange-400 leading-none">{totals.totalOutBags.toLocaleString()}</div>
-          <div className="text-[11px] text-ink-faint mt-1.5">bags in period</div>
+          <div className="text-[11px] text-ink-faint mt-1.5">bags in period / अवधि में बोरी</div>
           <div className="text-[13px] text-orange-400/80 mt-1">{totals.totalOutKg.toLocaleString()} kg</div>
         </div>
         <div className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total Remaining</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint mb-2">Total Remaining / कुल शेष</div>
           <div className="font-display text-[28px] font-bold text-ink leading-none">{totals.totalRemaining.toLocaleString()}</div>
-          <div className="text-[11px] text-ink-faint mt-1.5">kg remaining all time</div>
+          <div className="text-[11px] text-ink-faint mt-1.5">kg remaining all time / सदैव शेष kg</div>
         </div>
       </div>
 
@@ -177,16 +180,16 @@ export default function AdminDashboardPage() {
       {error ? (
         <div className="rounded-[var(--radius-card)] border border-red-500/20 bg-red-500/5 p-6 text-center">
           <p className="text-[13px] text-red-400 mb-3">{error}</p>
-          <button onClick={fetchData} className="text-[13px] font-semibold text-brand hover:underline">Retry</button>
+          <button onClick={fetchData} className="text-[13px] font-semibold text-brand hover:underline">Retry / पुनः प्रयास</button>
         </div>
       ) : loading ? (
         <div className="rounded-[var(--radius-card)] border border-border bg-surface p-12 text-center">
           <div className="w-6 h-6 border-2 border-brand/30 border-t-brand rounded-full animate-spin mx-auto" />
-          <p className="text-[13px] text-ink-faint mt-3">Loading inventory...</p>
+          <p className="text-[13px] text-ink-faint mt-3">Loading inventory... / इन्वेंटरी लोड हो रही है...</p>
         </div>
       ) : rows.length === 0 ? (
         <div className="rounded-[var(--radius-card)] border border-border bg-surface p-12 text-center">
-          <p className="text-[13px] text-ink-faint">No inventory movements in this period.</p>
+          <p className="text-[13px] text-ink-faint">No inventory movements in this period. / इस अवधि में कोई इन्वेंटरी आवाजाही नहीं।</p>
         </div>
       ) : (
         <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
@@ -194,14 +197,14 @@ export default function AdminDashboardPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Product</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Bag Size</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">IN (bags)</th>
+                  <th className="text-left text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Product / उत्पाद</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Bag Size / बोरी आकार</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">IN (bags) / आना (बोरी)</th>
                   <th className="text-right text-[10px] uppercase tracking-wider text-green-400/80 font-semibold px-4 py-3">IN (kg)</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">OUT (bags)</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">OUT (bags) / जाना (बोरी)</th>
                   <th className="text-right text-[10px] uppercase tracking-wider text-orange-400/80 font-semibold px-4 py-3">OUT (kg)</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Remaining</th>
-                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Bags Left</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Remaining / शेष</th>
+                  <th className="text-right text-[10px] uppercase tracking-wider text-ink-faint font-semibold px-4 py-3">Bags Left / बोरी शेष</th>
                 </tr>
               </thead>
               <tbody>
@@ -222,7 +225,7 @@ export default function AdminDashboardPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-border bg-white/[0.02]">
-                  <td className="px-4 py-3 text-[13px] font-bold text-ink">Total ({rows.length} items)</td>
+                  <td className="px-4 py-3 text-[13px] font-bold text-ink">Total / कुल ({rows.length} items / उत्पाद)</td>
                   <td className="px-4 py-3"></td>
                   <td className="px-4 py-3 text-[13px] text-green-400 text-right font-bold">{totals.totalInBags.toLocaleString()}</td>
                   <td className="px-4 py-3 text-[13px] text-green-400/80 text-right font-bold">{totals.totalInKg.toLocaleString()}</td>

@@ -264,3 +264,29 @@ export async function uploadFile(formData: FormData) {
 export async function deleteFile(id: string) {
   return authedFetch(`/files?id=${id}`, { method: "DELETE" });
 }
+
+// ─── Google Drive integration ─────────────────────────────────────
+
+export interface DriveIntegrationStatus {
+  connected: boolean;
+  account_email?: string | null;
+  folder_name?: string | null;
+  updated_at?: string;
+  callback_url?: string;
+  error?: string | null;
+}
+
+export async function getDriveIntegrationStatus(): Promise<DriveIntegrationStatus> {
+  return authedFetch("/integrations/google-drive");
+}
+
+export async function startDriveIntegration(): Promise<{
+  authorization_url: string;
+  callback_url: string;
+}> {
+  return authedFetch("/integrations/google-drive", { method: "POST" });
+}
+
+export async function disconnectDriveIntegration() {
+  return authedFetch("/integrations/google-drive", { method: "DELETE" });
+}

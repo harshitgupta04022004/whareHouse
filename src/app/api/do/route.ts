@@ -1,6 +1,6 @@
 import { requireAuth } from "@/lib/auth";
-import { checkRouteAccess, isStaffOwnOnly } from "@/lib/rbac";
-import { handleApiError, ConflictError, ValidationError } from "@/lib/errors";
+import { assertDoOwnership, checkRouteAccess, isStaffOwnOnly } from "@/lib/rbac";
+import { handleApiError, ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createServiceClient } from "@/lib/supabase";
 import { writeAudit } from "@/lib/audit";
 import { getIdempotencyKey, withIdempotency } from "@/lib/idempotency";
@@ -44,6 +44,37 @@ export async function GET(request: Request) {
     await checkRouteAccess(ROUTE_KEY_GET, user);
 
     const url = new URL(request.url);
+    const requestedId = url.searchParams.get("id");
+    const supabase = createServiceClient();
+
+    if (requestedId) {
+      const { data, error } = await supabase
+        .from("delivery_orders")
+        .select(`
+          *,
+          parties(name),
+          app_users(name),
+          do_items(*, items(name)),
+          files(
+            file_id,
+            file_name,
+            file_type,
+            file_size,
+            drive_url,
+            category,
+            description,
+            created_at
+          )
+        `)
+        .eq("do_id", requestedId)
+        .eq("warehouse_id", user.warehouseId)
+        .single();
+
+      if (error || !data) throw new NotFoundError("Delivery order");
+      assertDoOwnership(data.user_id, user);
+      return Response.json({ data });
+    }
+
     const cursor = url.searchParams.get("cursor");
     const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") ?? "20", 10), 1), 50);
     // Accept startDate/endDate and from/to; q and search
@@ -63,8 +94,6 @@ export async function GET(request: Request) {
     if (endDate && isNaN(Date.parse(endDate))) {
       throw new ValidationError("endDate", "Invalid date format");
     }
-
-    const supabase = createServiceClient();
 
     let query = supabase
       .from("delivery_orders")

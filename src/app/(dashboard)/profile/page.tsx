@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { DriveIntegrationCard } from "@/components/DriveIntegrationCard";
 import { getProfile, updateProfile } from "@/lib/api-client";
 
 interface ProfileData {
@@ -513,6 +514,12 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {profile.role === "admin" && (
+        <div className="mb-4">
+          <DriveIntegrationCard />
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">

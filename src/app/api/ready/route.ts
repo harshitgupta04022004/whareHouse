@@ -19,10 +19,18 @@ export async function GET() {
     checks.db = `error: ${err instanceof Error ? err.message : "unknown"}`;
   }
 
-  // Check Google Drive (lightweight — just verify env is set)
-  checks.drive = process.env.DRIVE_ROOT_FOLDER_ID ? "ok" : "not_configured";
+  // OAuth is connected per warehouse; readiness verifies the server-side
+  // client configuration without exposing any stored refresh token.
+  checks.drive =
+    process.env.GOOGLE_CLIENT_ID &&
+    process.env.GOOGLE_CLIENT_SECRET &&
+    process.env.DRIVE_ROOT_FOLDER_ID
+      ? "oauth_ready"
+      : "not_configured";
 
-  const allOk = Object.values(checks).every((v) => v === "ok" || v === "not_configured");
+  const allOk = Object.values(checks).every(
+    (value) => value === "ok" || value === "oauth_ready" || value === "not_configured",
+  );
 
   return NextResponse.json(
     {

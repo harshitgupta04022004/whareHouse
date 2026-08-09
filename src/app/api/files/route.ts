@@ -1,6 +1,6 @@
 import { requireAuth, getClientIp, getUserAgent } from "@/lib/auth";
-import { checkRouteAccess } from "@/lib/rbac";
-import { handleApiError, ValidationError } from "@/lib/errors";
+import { assertDoOwnership, checkRouteAccess } from "@/lib/rbac";
+import { AppError, handleApiError, NotFoundError, ValidationError } from "@/lib/errors";
 import { createServiceClient } from "@/lib/supabase";
 import { writeAudit } from "@/lib/audit";
 import { validateFile, getFolderPath, uploadToDrive, deleteFromDrive, isDriveConfigured } from "@/lib/drive";
@@ -29,27 +29,36 @@ export async function POST(request: Request) {
     const validation = validateFile(file);
     if (!validation.valid) throw new ValidationError("file", validation.error!);
 
-    if (doId) {
-      const supabaseCheck = createServiceClient();
-      const { data: doRow } = await supabaseCheck.from("delivery_orders").select("do_id").eq("do_id", doId).single();
-      if (!doRow) throw new ValidationError("do_id", "Delivery order not found");
-    }
-
-    const folderPath = getFolderPath(category, user.name, doId ?? undefined);
-
-    let driveFileId: string;
-    let driveUrl: string;
-
-    if (isDriveConfigured()) {
-      const result = await uploadToDrive(file, folderPath, file.name);
-      driveFileId = result.fileId;
-      driveUrl = result.url;
-    } else {
-      driveFileId = `dev_${Date.now()}`;
-      driveUrl = "#dev-placeholder";
+    if (!(await isDriveConfigured(user.warehouseId))) {
+      throw new AppError(
+        "drive_not_configured",
+        "Google Drive is not configured. Ask an admin to check the server environment variables.",
+        503,
+      );
     }
 
     const supabase = createServiceClient();
+    let doNumber: string | undefined;
+    if (doId) {
+      const { data: doRow, error: doError } = await supabase
+        .from("delivery_orders")
+        .select("do_id, do_number, user_id")
+        .eq("do_id", doId)
+        .eq("warehouse_id", user.warehouseId)
+        .single();
+      if (doError || !doRow) throw new NotFoundError("Delivery order");
+      assertDoOwnership(doRow.user_id, user);
+      doNumber = doRow.do_number;
+    }
+
+    const folderPath = getFolderPath(category, user.name, doNumber);
+    const uploaded = await uploadToDrive(
+      file,
+      folderPath,
+      file.name,
+      user.warehouseId,
+    );
+
     const { data, error } = await supabase
       .from("files")
       .insert({
@@ -59,8 +68,8 @@ export async function POST(request: Request) {
         file_name: file.name,
         file_type: file.type,
         file_size: file.size,
-        drive_file_id: driveFileId,
-        drive_url: driveUrl,
+        drive_file_id: uploaded.fileId,
+        drive_url: uploaded.url,
         folder_path: folderPath,
         category,
         description: description ?? null,
@@ -68,7 +77,14 @@ export async function POST(request: Request) {
       .select("file_id")
       .single();
 
-    if (error) throw error;
+    if (error) {
+      try {
+        await deleteFromDrive(uploaded.fileId, user.warehouseId);
+      } catch (cleanupError) {
+        console.error("Drive cleanup after database failure failed:", cleanupError);
+      }
+      throw error;
+    }
 
     await writeAudit(supabase, {
       warehouseId: user.warehouseId, userId: user.userId,
@@ -77,7 +93,16 @@ export async function POST(request: Request) {
       ipAddress: getClientIp(request), userAgent: getUserAgent(request),
     });
 
-    return Response.json({ file_id: data.file_id, drive_url: driveUrl, message: "File uploaded." }, { status: 201 });
+    return Response.json(
+      {
+        file_id: data.file_id,
+        drive_url: uploaded.url,
+        folder_path: folderPath,
+        storage: "google_drive",
+        message: "File uploaded to Google Drive.",
+      },
+      { status: 201 },
+    );
   } catch (error) {
     return handleApiError(error);
   }
@@ -95,6 +120,7 @@ export async function GET(request: Request) {
     const supabase = createServiceClient();
     let query = supabase.from("files").select("*").eq("warehouse_id", user.warehouseId).order("created_at", { ascending: false });
 
+    if (user.role === "staff") query = query.eq("user_id", user.userId);
     if (doId) query = query.eq("do_id", doId);
     if (category) query = query.eq("category", category);
 
@@ -117,11 +143,16 @@ export async function DELETE(request: Request) {
     if (!fileId) throw new ValidationError("id", "File ID required");
 
     const supabase = createServiceClient();
-    const { data: existing } = await supabase.from("files").select("*").eq("file_id", fileId).single();
+    const { data: existing } = await supabase
+      .from("files")
+      .select("*")
+      .eq("file_id", fileId)
+      .eq("warehouse_id", user.warehouseId)
+      .single();
     if (!existing) throw new ValidationError("id", "File not found");
 
     try {
-      await deleteFromDrive(existing.drive_file_id);
+      await deleteFromDrive(existing.drive_file_id, user.warehouseId);
     } catch (driveError) {
       console.error("Drive delete failed (DB delete proceeds):", driveError);
     }

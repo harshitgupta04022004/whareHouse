@@ -383,6 +383,51 @@ export type Database = {
           },
         ];
       };
+      drive_integrations: {
+        Row: {
+          warehouse_id: string;
+          refresh_token_encrypted: string;
+          account_email: string | null;
+          root_folder_id: string;
+          connected_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          warehouse_id: string;
+          refresh_token_encrypted: string;
+          account_email?: string | null;
+          root_folder_id: string;
+          connected_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          warehouse_id?: string;
+          refresh_token_encrypted?: string;
+          account_email?: string | null;
+          root_folder_id?: string;
+          connected_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "drive_integrations_warehouse_id_fkey";
+            columns: ["warehouse_id"];
+            isOneToOne: true;
+            referencedRelation: "warehouses";
+            referencedColumns: ["warehouse_id"];
+          },
+          {
+            foreignKeyName: "drive_integrations_connected_by_fkey";
+            columns: ["connected_by"];
+            isOneToOne: false;
+            referencedRelation: "app_users";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
     };
     Views: {
       product_summary: {

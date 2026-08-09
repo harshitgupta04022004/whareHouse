@@ -214,6 +214,9 @@ export default function DODetailPage() {
       <div className="rounded-[var(--radius-card)] border border-border bg-surface mb-6 overflow-hidden">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Documents ({DO.files?.length || 0})</span>
+          <span className="text-[10px] font-medium text-brand">
+            Google Drive सुरक्षित
+          </span>
         </div>
 
         {/* Drop Zone */}
@@ -245,7 +248,9 @@ export default function DODetailPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               <p className="text-[13px] text-ink-soft">Drag & drop files here, or <span className="font-semibold text-brand">browse</span></p>
-              <p className="text-[11px] text-ink-faint mt-1">PDF, JPG, PNG — max 10MB</p>
+              <p className="text-[11px] text-ink-faint mt-1">
+                PDF, JPG, PNG — max 4MB · Stored in Google Drive
+              </p>
             </>
           )}
         </div>

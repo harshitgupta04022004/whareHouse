@@ -3,7 +3,7 @@ import { checkRouteAccess } from "@/lib/rbac";
 import { handleApiError, ValidationError, ConflictError, PermissionError, AppError } from "@/lib/errors";
 import { createServiceClient } from "@/lib/supabase";
 import { writeAudit } from "@/lib/audit";
-import { getRedirectUrl } from "@/lib/url-utils";
+import { getRedirectUrlFromRequest } from "@/lib/url-utils";
 import { z } from "zod";
 
 const ROUTE_KEY_GET = "GET /api/users";
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
         email,
         {
           data: { name, warehouse_id: user.warehouseId, role },
-          redirectTo: getRedirectUrl("/auth/callback"),
+          redirectTo: getRedirectUrlFromRequest(request, "/auth/callback"),
         },
       );
 

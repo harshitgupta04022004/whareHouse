@@ -58,6 +58,254 @@ const actionColors: Record<string, string> = {
   logout: "bg-yellow-500/15 text-yellow-400",
 };
 
+const actionColors: Record<string, string> = {
+  create: "bg-green-500/15 text-green-400",
+  update: "bg-blue-500/15 text-blue-400",
+  delete: "bg-red-500/15 text-red-400",
+  login: "bg-purple-500/15 text-purple-400",
+  logout: "bg-yellow-500/15 text-yellow-400",
+};
+
+type RoleKey = "admin" | "manager" | "staff";
+
+type PermissionRow = {
+  featureEn: string;
+  featureHi: string;
+  admin: boolean | "own";
+  manager: boolean | "own";
+  staff: boolean | "own";
+};
+
+const PERMISSION_ROWS: PermissionRow[] = [
+  {
+    featureEn: "View DOs",
+    featureHi: "DO देखें",
+    admin: true,
+    manager: true,
+    staff: "own",
+  },
+  {
+    featureEn: "Create / edit / delete DOs",
+    featureHi: "DO बनाएं / बदलें / हटाएं",
+    admin: true,
+    manager: true,
+    staff: "own",
+  },
+  {
+    featureEn: "Manage items",
+    featureHi: "माल प्रबंधित करें",
+    admin: true,
+    manager: true,
+    staff: true,
+  },
+  {
+    featureEn: "Manage parties",
+    featureHi: "पार्टी प्रबंधित करें",
+    admin: true,
+    manager: true,
+    staff: true,
+  },
+  {
+    featureEn: "Inventory dashboard",
+    featureHi: "इन्वेंटरी डैशबोर्ड",
+    admin: true,
+    manager: true,
+    staff: false,
+  },
+  {
+    featureEn: "View audit log",
+    featureHi: "ऑडिट लॉग देखें",
+    admin: true,
+    manager: true,
+    staff: false,
+  },
+  {
+    featureEn: "Verify audit integrity",
+    featureHi: "ऑडिट अखंडता जाँच",
+    admin: true,
+    manager: false,
+    staff: false,
+  },
+  {
+    featureEn: "Invite & manage users",
+    featureHi: "यूज़र आमंत्रित / प्रबंधित करें",
+    admin: true,
+    manager: false,
+    staff: false,
+  },
+  {
+    featureEn: "Upload DO files",
+    featureHi: "DO फ़ाइल अपलोड",
+    admin: true,
+    manager: true,
+    staff: true,
+  },
+  {
+    featureEn: "Delete files",
+    featureHi: "फ़ाइल हटाएं",
+    admin: true,
+    manager: true,
+    staff: false,
+  },
+  {
+    featureEn: "Edit own profile",
+    featureHi: "अपनी प्रोफ़ाइल बदलें",
+    admin: true,
+    manager: true,
+    staff: true,
+  },
+  {
+    featureEn: "Export CSV / Excel / PDF",
+    featureHi: "CSV / Excel / PDF निर्यात",
+    admin: true,
+    manager: true,
+    staff: true,
+  },
+];
+
+const ROLE_DESCRIPTIONS: Record<
+  RoleKey,
+  { titleEn: string; titleHi: string; bodyEn: string; bodyHi: string }
+> = {
+  admin: {
+    titleEn: "Admin",
+    titleHi: "एडमिन",
+    bodyEn:
+      "Full warehouse control. Admins can manage users (invite, change role, remove), verify audit integrity, view all DOs, run the inventory dashboard, and do everything managers and staff can do.",
+    bodyHi:
+      "पूरे गोदाम का नियंत्रण। एडमिन यूज़र प्रबंधित कर सकते हैं (आमंत्रण, भूमिका बदलना, हटाना), ऑडिट अखंडता जाँच कर सकते हैं, सभी DO देख सकते हैं, इन्वेंटरी डैशबोर्ड चला सकते हैं, और मैनेजर तथा स्टाफ के सभी काम कर सकते हैं।",
+  },
+  manager: {
+    titleEn: "Manager",
+    titleHi: "मैनेजर",
+    bodyEn:
+      "Day-to-day operations lead. Managers can view all DOs, use the inventory dashboard and audit log, manage items/parties, and delete files. They cannot invite users or change roles.",
+    bodyHi:
+      "दैनिक संचालन का नेतृत्व। मैनेजर सभी DO देख सकते हैं, इन्वेंटरी डैशबोर्ड और ऑडिट लॉग इस्तेमाल कर सकते हैं, माल/पार्टी प्रबंधित कर सकते हैं, और फ़ाइल हटा सकते हैं। वे यूज़र आमंत्रित या भूमिका नहीं बदल सकते।",
+  },
+  staff: {
+    titleEn: "Staff",
+    titleHi: "स्टाफ",
+    bodyEn:
+      "Field / desk entry role. Staff can create and manage their own DOs, add items and parties, upload files, and update their profile. They only see their own DOs and cannot open Users, Audit, or Dashboard.",
+    bodyHi:
+      "प्रविष्टि / फील्ड भूमिका। स्टाफ अपने DO बना और प्रबंधित कर सकते हैं, माल व पार्टी जोड़ सकते हैं, फ़ाइल अपलोड कर सकते हैं, और प्रोफ़ाइल अपडेट कर सकते हैं। वे केवल अपने DO देखते हैं; Users, Audit या Dashboard नहीं खोल सकते।",
+  },
+};
+
+function cellLabel(value: boolean | "own") {
+  if (value === true) return { text: "Yes", hi: "हाँ", className: "text-green-400" };
+  if (value === "own") return { text: "Own only", hi: "केवल अपने", className: "text-amber-400" };
+  return { text: "No", hi: "नहीं", className: "text-ink-faint" };
+}
+
+function rolesVisibleFor(role: string): RoleKey[] {
+  if (role === "admin") return ["admin", "manager", "staff"];
+  if (role === "manager") return ["manager", "staff"];
+  return ["staff"];
+}
+
+function RoleScopeSection({ role }: { role: string }) {
+  const visibleRoles = rolesVisibleFor(role);
+  const gridCols =
+    visibleRoles.length === 3
+      ? "sm:grid-cols-[minmax(140px,1.4fr)_repeat(3,minmax(70px,1fr))]"
+      : visibleRoles.length === 2
+        ? "sm:grid-cols-[minmax(140px,1.4fr)_repeat(2,minmax(70px,1fr))]"
+        : "sm:grid-cols-[minmax(140px,1.4fr)_minmax(90px,1fr)]";
+
+  return (
+    <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
+      <div className="px-4 sm:px-5 py-4 border-b border-border">
+        <h2 className="text-[14px] font-semibold text-ink">
+          Role permissions / भूमिका अनुमतियाँ
+        </h2>
+        <p className="text-[12px] text-ink-soft mt-1">
+          What your role can do in this warehouse.
+        </p>
+        <p className="text-[11px] text-ink-faint mt-0.5">
+          इस गोदाम में आपकी भूमिका क्या कर सकती है।
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <div className={`min-w-[480px] grid ${gridCols} gap-0 border-b border-border bg-white/[0.02]`}>
+          <div className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+            Feature / सुविधा
+          </div>
+          {visibleRoles.map((r) => (
+            <div
+              key={r}
+              className="px-2 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint text-center"
+            >
+              {ROLE_DESCRIPTIONS[r].titleEn}
+              <span className="block normal-case tracking-normal text-ink-faint/80">
+                {ROLE_DESCRIPTIONS[r].titleHi}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {PERMISSION_ROWS.map((row) => (
+          <div
+            key={row.featureEn}
+            className={`min-w-[480px] grid ${gridCols} gap-0 border-b border-border/50 last:border-0`}
+          >
+            <div className="px-4 py-2.5">
+              <div className="text-[12px] font-medium text-ink">{row.featureEn}</div>
+              <div className="text-[11px] text-ink-faint">{row.featureHi}</div>
+            </div>
+            {visibleRoles.map((r) => {
+              const cell = cellLabel(row[r]);
+              return (
+                <div key={r} className="px-2 py-2.5 text-center self-center">
+                  <div className={`text-[12px] font-semibold ${cell.className}`}>{cell.text}</div>
+                  <div className={`text-[10px] ${cell.className}`}>{cell.hi}</div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      <div className="px-4 sm:px-5 py-4 space-y-4 border-t border-border">
+        <h3 className="text-[13px] font-semibold text-ink">
+          Role description / भूमिका विवरण
+        </h3>
+        {visibleRoles.map((r) => {
+          const d = ROLE_DESCRIPTIONS[r];
+          const isYou = role === r;
+          return (
+            <div
+              key={r}
+              className={`rounded-[11px] border px-3.5 py-3 ${
+                isYou ? "border-brand/40 bg-brand/5" : "border-border bg-white/[0.02]"
+              }`}
+            >
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <span
+                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg capitalize ${
+                    roleColors[r] || "bg-white/10 text-ink-soft"
+                  }`}
+                >
+                  {d.titleEn} / {d.titleHi}
+                </span>
+                {isYou && (
+                  <span className="text-[10px] font-semibold text-brand">
+                    Your role / आपकी भूमिका
+                  </span>
+                )}
+              </div>
+              <p className="text-[12.5px] text-ink-soft leading-relaxed">{d.bodyEn}</p>
+              <p className="text-[12px] text-ink-faint leading-relaxed mt-1.5">{d.bodyHi}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function formatDate(value: string) {
   try {
     return new Date(value).toLocaleString("en-IN", {
@@ -82,7 +330,7 @@ export default function ProfilePage() {
   const [logs, setLogs] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"overview" | "dos" | "activity">("overview");
+  const [tab, setTab] = useState<"overview" | "permissions" | "dos" | "activity">("overview");
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -305,6 +553,7 @@ export default function ProfilePage() {
         {(
           [
             ["overview", "Overview"],
+            ["permissions", "Permissions / अनुमतियाँ"],
             ["dos", `My DOs (${dos.length})`],
             ["activity", `Activity (${logs.length})`],
           ] as const
@@ -324,39 +573,51 @@ export default function ProfilePage() {
       </div>
 
       {tab === "overview" && (
-        <div className="rounded-[var(--radius-card)] border border-border bg-surface p-4 sm:p-5 space-y-4">
-          <div>
-            <h2 className="text-[14px] font-semibold text-ink mb-2">Account details</h2>
-            <dl className="space-y-2 text-[13px]">
-              <div className="flex justify-between gap-3 border-b border-border/50 pb-2">
-                <dt className="text-ink-faint">Full name</dt>
-                <dd className="text-ink font-medium text-right">{profile.name}</dd>
-              </div>
-              <div className="flex justify-between gap-3 border-b border-border/50 pb-2">
-                <dt className="text-ink-faint">Email</dt>
-                <dd className="text-ink font-medium text-right break-all">{profile.email}</dd>
-              </div>
-              <div className="flex justify-between gap-3 border-b border-border/50 pb-2">
-                <dt className="text-ink-faint">Role</dt>
-                <dd className="text-ink font-medium text-right capitalize">{profile.role}</dd>
-              </div>
-              <div className="flex justify-between gap-3 border-b border-border/50 pb-2">
-                <dt className="text-ink-faint">Warehouse</dt>
-                <dd className="text-ink font-medium text-right">{profile.warehouse_name}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-ink-faint">User ID</dt>
-                <dd className="text-ink-faint font-mono text-[11px] text-right truncate max-w-[180px]">
-                  {profile.user_id}
-                </dd>
-              </div>
-            </dl>
+        <div className="space-y-4">
+          <div className="rounded-[var(--radius-card)] border border-border bg-surface p-4 sm:p-5 space-y-4">
+            <div>
+              <h2 className="text-[14px] font-semibold text-ink mb-2">Account details</h2>
+              <dl className="space-y-2 text-[13px]">
+                <div className="flex justify-between gap-3 border-b border-border/50 pb-2">
+                  <dt className="text-ink-faint">Full name</dt>
+                  <dd className="text-ink font-medium text-right">{profile.name}</dd>
+                </div>
+                <div className="flex justify-between gap-3 border-b border-border/50 pb-2">
+                  <dt className="text-ink-faint">Email</dt>
+                  <dd className="text-ink font-medium text-right break-all">{profile.email}</dd>
+                </div>
+                <div className="flex justify-between gap-3 border-b border-border/50 pb-2">
+                  <dt className="text-ink-faint">Role</dt>
+                  <dd className="text-ink font-medium text-right capitalize">{profile.role}</dd>
+                </div>
+                <div className="flex justify-between gap-3 border-b border-border/50 pb-2">
+                  <dt className="text-ink-faint">Warehouse</dt>
+                  <dd className="text-ink font-medium text-right">{profile.warehouse_name}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-ink-faint">User ID</dt>
+                  <dd className="text-ink-faint font-mono text-[11px] text-right truncate max-w-[180px]">
+                    {profile.user_id}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            <p className="text-[12px] text-ink-faint">
+              This profile shows your own delivery orders and activity in this warehouse.
+            </p>
+            <button
+              type="button"
+              onClick={() => setTab("permissions")}
+              className="text-[12px] font-semibold text-brand hover:underline"
+            >
+              See what your role can do / अपनी भूमिका की अनुमतियाँ देखें →
+            </button>
           </div>
-          <p className="text-[12px] text-ink-faint">
-            This profile shows your own delivery orders and activity in this warehouse.
-          </p>
+          <RoleScopeSection role={profile.role} />
         </div>
       )}
+
+      {tab === "permissions" && <RoleScopeSection role={profile.role} />}
 
       {tab === "dos" && (
         <div className="rounded-[var(--radius-card)] border border-border bg-surface overflow-hidden">
